@@ -1,41 +1,44 @@
 {
   "expo": {
-    "name": "virtual-pet",
+    "name": "Milo",
     "slug": "virtual-pet",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/brand/app-icon.png",
     "scheme": "virtualpet",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#fef9f2",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "supportsTablet": true,
+      "bundleIdentifier": "com.andersonsinaluisa.milo"
     },
     "android": {
+      "package": "com.andersonsinaluisa.milo",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#FEF9F2",
+        "foregroundImage": "./assets/images/brand/adaptive-foreground.png"
       },
       "predictiveBackGestureEnabled": false
     },
     "web": {
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/images/brand/favicon.png"
     },
     "plugins": [
       "expo-router",
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "backgroundColor": "#fef9f2",
+          "image": "./assets/images/brand/splash.png",
+          "imageWidth": 180
         }
-      ]
+      ],
+      "expo-audio",
+      "expo-sqlite",
+      "expo-asset"
     ],
     "experiments": {
-      "typedRoutes": true,
       "reactCompiler": true
     }
   }
