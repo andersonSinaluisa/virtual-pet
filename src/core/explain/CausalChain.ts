@@ -80,12 +80,18 @@ const SENSOR_PHRASE: Record<SensorKey, string> = {
   waterAvailable: 'Vio agua', bedAvailable: 'Vio su camita', toyAvailable: 'Vio un juguete', interestingObjectVisible: 'Vio algo interesante',
   hidingPlaceAvailable: 'Vio un escondite', darkness: 'Notó la oscuridad', loudSound: 'Oyó un ruido fuerte',
   newObjectDetected: 'Algo nuevo apareció', playerCalling: 'Oyó que lo llamabas',
+  seesBall: 'Vio la pelota', seesTeddy: 'Vio el peluche', seesRope: 'Vio la cuerda', seesDuck: 'Vio el patito',
+  time00: 'Era de madrugada', time04: 'Estaba amaneciendo', time08: 'Era por la mañana', time12: 'Era mediodía',
+  time16: 'Era por la tarde', time20: 'Era de noche', lightLevel: 'Había luz', zoneBed: 'Estaba cerca de su cama',
+  zoneFood: 'Estaba cerca de su comida', zonePlay: 'Estaba en su zona de juego', zoneWindow: 'Estaba junto a la ventana',
+  playerReturned: 'Acababas de volver', recentActivity: 'Había estado muy activo',
 };
 
 const CIRCUIT_EMOTION: Record<CircuitKey, string> = {
   feedingCircuit: 'Apetito', drinkingCircuit: 'Sed', restCircuit: 'Ganas de descansar', activityCircuit: 'Ganas de moverse',
   playCircuit: 'Ganas de jugar', socialCircuit: 'Ganas de compañía', lonelinessCircuit: 'Soledad', followCircuit: 'Ganas de seguirte',
   joyCircuit: 'Alegría', distressCircuit: 'Malestar', curiosityCircuit: 'Curiosidad', fearCircuit: 'Miedo',
+  ballAttention: 'Interés por la pelota', teddyAttention: 'Interés por el peluche', ropeAttention: 'Interés por la cuerda', duckAttention: 'Interés por el patito',
 };
 
 export function sensorPhrase(key: string): string {

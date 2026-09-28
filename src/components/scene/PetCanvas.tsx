@@ -46,7 +46,13 @@ interface Props {
 
 function sessionSource(): SceneSource | null {
   const s = SessionController.current;
-  return s ? { world: s.world, active: () => s.sim.last.active as readonly Action[] } : null;
+  if (!s) return null;
+  return {
+    world: s.world,
+    active: () => s.sim.last.active as readonly Action[],
+    // Crecimiento real; en desarrollo, la vista previa lo sustituye SOLO en pantalla (no toca el desarrollo)
+    growth: () => ({ value: devStore.get().growthPreview ?? s.growth.visualValue(s.clock.now()), size: s.growth.state.modifiers.size }),
+  };
 }
 
 export function PetCanvas({ species, mode = 'home', framing = 'room', source, style, children, onPetTouched }: Props) {

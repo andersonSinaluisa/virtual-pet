@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { FetchView } from '@/core/games';
 import type { SpeciesKey } from '@/core/persistence/SaveGame';
+import { RewardButton } from '@/components/learning/RewardButton';
 import { PetStage } from '@/components/scene/PetStage';
 import { PrimaryButton, SoftButton } from '@/components/ui/Buttons';
 import { Squishable } from '@/components/ui/Squishable';
@@ -31,6 +32,7 @@ export function FetchPanel({ view, petName, species }: { view: FetchView; petNam
           <ThoughtBubble text={view.narration.title} tail="center" />
           {__DEV__ ? <Chip small label={`SNN ${Math.round(view.spikesPerSecond)} Hz`} bg={alpha(colors.secondaryContainer, 0.8)} color={colors.onSecondaryContainer} style={styles.dev} /> : null}
           <View style={{ flex: 1 }} pointerEvents="none" />
+          <RewardButton style={{ alignSelf: 'center' }} />
           {view.canThrow ? (
             <Squishable onPress={quickThrow} accessibilityLabel="Lanzar la pelota" style={styles.throw}>
               <Text variant="labelLg" color="#fff">⚽ ¡Lanzar!</Text>

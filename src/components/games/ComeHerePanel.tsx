@@ -12,11 +12,14 @@ import { PrimaryButton, SoftButton } from '@/components/ui/Buttons';
 import { Text } from '@/components/ui/Text';
 import { ThoughtBubble } from '@/components/ui/ThoughtBubble';
 import { SessionController } from '@/services/SessionController';
+import { useStore } from '@/state/createStore';
+import { petStore } from '@/state/stores';
 import { alpha, colors, spacing } from '@/theme';
 
 export function ComeHerePanel({ view, petName, species }: { view: ComeHereView; petName: string; species: SpeciesKey }) {
   const insets = useSafeAreaInsets();
   const paws = Math.min(5, view.responses);
+  const rewardable = useStore(petStore, (p) => p?.rewardable === 'APPROACH' || p?.rewardable === 'FOLLOW_PLAYER');
   return (
     <View style={styles.root}>
       <PetStage species={species} mode="home" style={StyleSheet.absoluteFill}>
@@ -28,8 +31,9 @@ export function ComeHerePanel({ view, petName, species }: { view: ComeHereView; 
         <Text variant="headlineSm" align="center" accessibilityLabel={`Vino ${view.responses} veces`}>
           {'🐾'.repeat(paws)}<Text variant="headlineSm" color={colors.outlineVariant}>{'🐾'.repeat(5 - paws).replace(/🐾/g, '·')}</Text>
         </Text>
-        {view.canPet ? (
-          <PrimaryButton size="lg" label="💛 ¡Dale mimos!" onPress={() => SessionController.gameInput({ type: 'pet' })} />
+        {view.canPet || rewardable ? (
+          // Si acaba de venir, los mimos son también la recompensa que enseña ("❤️")
+          <PrimaryButton size="lg" label="❤️ ¡Dale mimos!" onPress={() => { if (!SessionController.rewardPlayer()) SessionController.gameInput({ type: 'pet' }); }} />
         ) : (
           <PrimaryButton size="lg" label={`📣 ¡${petName}, ven!`} onPress={() => SessionController.gameInput({ type: 'call' })} />
         )}

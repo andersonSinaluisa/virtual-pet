@@ -15,6 +15,12 @@
 import { AppState, type AppStateStatus } from 'react-native';
 
 import type { GameId } from '@/core/games/catalog';
+import { evaluatePreference, trainWithObject, type PreferenceReport } from '@/core/learning/experiments';
+import { createLivingPet, DAY_MS, freeRun, liveDays, supply, type FreeRunReport } from '@/core/routines/experiments';
+import { interpretRoutines, routineHeadline, type RoutineCard } from '@/core/routines/RoutineInterpreter';
+import { stageConfig } from '@/core/growth/GrowthConfig';
+import { RealWorldClock } from '@/core/time/WorldClock';
+import { seededRng } from '@/core/random';
 import type { GameCommand } from '@/core/games/MiniGame';
 import type { Moment } from '@/core/memory/types';
 import type { SettingsData, SpeciesKey } from '@/core/persistence/SaveGame';
@@ -24,7 +30,7 @@ import { simulateAway } from '@/core/simulation/OfflineSimulation';
 import { TickEngine } from '@/core/simulation/TickEngine';
 import type { ItemKind } from '@/core/world/Items';
 import {
-  awayStore, devStore, gameStore, memoryStore, petStore, pushToast, sessionStore, settingsStore,
+  awayStore, devStore, discoveryStore, growthStore, gameStore, learningStore, memoryStore, petStore, pushToast, sessionStore, settingsStore,
 } from '@/state/stores';
 
 import { AudioManager } from './AudioManager';
@@ -36,7 +42,16 @@ const AUTOSAVE_TICKS = 60; // ~20 s a 3 ticks/s
 const PUBLISH_MS = 250;
 const CAPTURE_KINDS: ReadonlySet<Moment['kind']> = new Set(['first_time', 'game', 'discovery']);
 
+export interface RoutineLabPet {
+  name: string;
+  headline: string;
+  cards: RoutineCard[];
+  freeRun: FreeRunReport;
+}
+
 class SessionControllerImpl {
+  // La hora del mundo es la del teléfono (en desarrollo: × velocidad y saltos)
+  readonly clock = new RealWorldClock();
   private session: GameSession | null = null;
   private store: SaveGameStore | null = null;
   private engine: TickEngine | null = null;
@@ -48,6 +63,7 @@ class SessionControllerImpl {
   private appState: AppStateStatus = AppState.currentState;
   private appSub: { remove(): void } | null = null;
   private reconciling = false;
+  private lastLearningPublish = 0;
   private booted = false;
 
   get current(): GameSession | null {
@@ -69,7 +85,7 @@ class SessionControllerImpl {
       } else if (res.status === 'corrupt') {
         sessionStore.set((s) => ({ ...s, status: 'onboarding', notice: 'No pudimos leer la partida guardada. Guardamos una copia por seguridad y empezamos de nuevo.' }));
       } else {
-        const { session, weights } = GameSession.fromSave(res.save);
+        const { session, weights } = GameSession.fromSave(res.save, { clock: this.clock });
         if (weights.ignored.length) console.warn('[save] pesos ignorados', weights.ignored);
         this.applySettings(res.save.settings);
         this.attach(session);
@@ -87,7 +103,7 @@ class SessionControllerImpl {
   }
 
   async adopt(input: { name: string; species: SpeciesKey }): Promise<void> {
-    const session = GameSession.create(input);
+    const session = GameSession.create(input, { clock: this.clock });
     this.attach(session);
     sessionStore.set((s) => ({ ...s, status: 'ready', notice: null }));
     await this.save();
@@ -103,9 +119,13 @@ class SessionControllerImpl {
       ev.on('moment', (m) => this.onMoment(m)),
       ev.on('discovery', (d) => {
         memoryStore.set((v) => v + 1);
-        pushToast({ kind: 'discovery', title: 'Nuevo descubrimiento', text: d.title });
+        discoveryStore.set({ discovery: d, momentId: null });
         haptic('discovery');
         AudioManager.play('discovery');
+      }),
+      ev.on('learning', () => {
+        const now = Date.now();
+        if (now - this.lastLearningPublish > 1000) { this.lastLearningPublish = now; learningStore.set((v) => v + 1); }
       }),
       ev.on('experience', (e) => {
         if (e.offline) return;
@@ -116,7 +136,16 @@ class SessionControllerImpl {
       }),
       ev.on('changed', () => memoryStore.set((v) => v + 1)),
       ev.on('gameEnded', () => { gameStore.set(null); void this.save(); }),
+      ev.on('growth', (g) => {
+        AudioManager.setVoiceProfile(stageConfig(g.to).voice);
+        growthStore.set(g);
+        petStore.set(session.snapshot());
+        memoryStore.set((v) => v + 1);
+        haptic('discovery');
+        void this.save(); // la transición termina guardada
+      }),
     );
+    AudioManager.setVoiceProfile(stageConfig(session.growth.stage).voice);
     const cfg = session.config.simulation;
     this.engine = new TickEngine({ ticksPerSecond: cfg.baseTicksPerSecond, onTick: () => this.tickOnce() });
     this.engine.setSpeed(devStore.get().speed);
@@ -163,7 +192,10 @@ class SessionControllerImpl {
 
   private onMoment(m: Moment): void {
     memoryStore.set((v) => v + 1);
-    if (m.kind !== 'captured') {
+    const pending = discoveryStore.get();
+    if (m.kind === 'discovery' && pending && pending.discovery.title === m.title) {
+      discoveryStore.set({ ...pending, momentId: m.id }); // la tarjeta de descubrimiento ya lo anuncia
+    } else if (m.kind !== 'captured') {
       pushToast({ kind: 'moment', title: 'Nuevo recuerdo', text: m.title });
       if (m.keyMoment) haptic('memory');
     }
@@ -346,7 +378,7 @@ class SessionControllerImpl {
   async importSave(json: string): Promise<void> {
     if (!this.store) throw new Error('Almacenamiento no disponible');
     const save = await this.store.importRaw(json);
-    const { session } = GameSession.fromSave(save);
+    const { session } = GameSession.fromSave(save, { clock: this.clock });
     this.applySettings(save.settings);
     this.attach(session);
     sessionStore.set((s) => ({ ...s, status: 'ready', notice: 'Partida importada.' }));
@@ -359,6 +391,178 @@ class SessionControllerImpl {
     gameStore.set(null);
     awayStore.set(null);
     sessionStore.set((s) => ({ ...s, status: 'onboarding', notice: null }));
+  }
+
+  // ---------- Aprendizaje ----------
+  // ❤️ Recompensar: el aprendizaje ocurre en el core; aquí solo la respuesta sensorial
+  rewardPlayer(): boolean {
+    const s = this.session;
+    if (!s || !s.rewardable()) return false;
+    s.rewardPlayer();
+    haptic('pet');
+    AudioManager.play('petHappy');
+    petStore.set(s.snapshot());
+    learningStore.set((v) => v + 1);
+    return true;
+  }
+
+  saveDiscoveryMemory(): void {
+    const d = discoveryStore.get();
+    if (d?.momentId) {
+      const m = this.session?.memory.moment(d.momentId);
+      if (m && !m.favorite) this.session?.toggleFavorite(d.momentId);
+      haptic('memory');
+      void this.save();
+    }
+    discoveryStore.set(null);
+  }
+
+  dismissDiscovery(): void {
+    discoveryStore.set(null);
+  }
+
+  setLearningEnabled(on: boolean): void {
+    if (this.session) this.session.plasticity.enabled = on;
+    learningStore.set((v) => v + 1);
+  }
+
+  setLearningRate(rate: number): void {
+    if (this.session) this.session.plasticity.learningRate = Math.max(0, Math.min(0.5, rate));
+    learningStore.set((v) => v + 1);
+  }
+
+  injectReward(r: number): void {
+    this.session?.injectReward(r);
+    learningStore.set((v) => v + 1);
+  }
+
+  resetLearnedWeights(): void {
+    this.session?.resetLearnedWeights();
+    learningStore.set((v) => v + 1);
+    void this.save();
+  }
+
+  exportBrain(includeMemory = true): string | null {
+    return this.session ? JSON.stringify(this.session.exportBrain(includeMemory)) : null;
+  }
+
+  importBrain(json: string): void {
+    if (!this.session) throw new Error('No hay mascota');
+    this.session.importBrain(JSON.parse(json) as unknown);
+    learningStore.set((v) => v + 1);
+    void this.save();
+  }
+
+  // Experimento local (no toca a la mascota real): dos copias recién nacidas con el mismo cerebro,
+  // una juega con la pelota y otra con el peluche; después se mide qué prefieren.
+  async runLearningSimulation(episodes = 60, onProgress?: (msg: string) => void): Promise<{ base: PreferenceReport; ball: PreferenceReport; teddy: PreferenceReport }> {
+    const yieldFn = () => new Promise<void>((r) => setTimeout(r, 0));
+    const mk = () => GameSession.create({ name: 'Lab', species: 'dog' }, { rng: seededRng(11), lifeStage: 'YOUNG' });
+    const base = mk(), A = mk(), B = mk();
+    onProgress?.('Entrenando con la pelota…');
+    await trainWithObject(A, 'ball', episodes, 60, yieldFn);
+    onProgress?.('Entrenando con el peluche…');
+    await trainWithObject(B, 'teddy', episodes, 60, yieldFn);
+    onProgress?.('Evaluando…');
+    const [e0, eA, eB] = [await evaluatePreference(base, ['ball', 'teddy'], 24, 45, 1, yieldFn), await evaluatePreference(A, ['ball', 'teddy'], 24, 45, 1, yieldFn), await evaluatePreference(B, ['ball', 'teddy'], 24, 45, 1, yieldFn)];
+    return { base: e0, ball: eA, teddy: eB };
+  }
+
+  // ---------- Rutinas (desarrollo) ----------
+  private publish(): void {
+    const s = this.session;
+    if (s) petStore.set(s.snapshot());
+    memoryStore.set((v) => v + 1);
+  }
+
+  advanceClock(ms: number): void {
+    this.clock.advance(ms);
+    this.publish();
+  }
+
+  setClockSpeed(speed: number): void {
+    this.clock.setSpeed(speed);
+    devStore.set((d) => ({ ...d, clockSpeed: speed }));
+  }
+
+  setLamp(on: boolean): void {
+    this.session?.world.setLight(on);
+    this.publish();
+  }
+
+  setPlayerPresent(present: boolean): void {
+    this.session?.setPlayerPresent(present);
+    this.publish();
+  }
+
+  /*
+   * Avance rápido de la mascota REAL: vive `days` días de mundo a 1 minuto por tick
+   * (fisiología 'day'), con comida y agua automáticas y nadie más. Sus episodios cuentan
+   * como experiencia real (a diferencia de la simulación offline comprimida).
+   */
+  async fastForwardDays(days: number, onProgress?: (msg: string) => void): Promise<void> {
+    const s = this.session;
+    if (!s) return;
+    const wasRunning = devStore.get().running;
+    this.engine?.stop();
+    this.reconciling = true;
+    s.setPhysiology('day');
+    const t0 = this.clock.now();
+    try {
+      for (let i = 0; i < days * 1440; i++) {
+        s.setTimeOverride(t0 + (i + 1) * 60_000);
+        if (i % 360 === 0) supply(s);
+        s.tick();
+        if (i % 1440 === 1439) {
+          onProgress?.(`Día ${Math.round((i + 1) / 1440)} de ${days}…`);
+          await new Promise<void>((r) => setTimeout(r, 0));
+        }
+      }
+    } finally {
+      s.setTimeOverride(null);
+      s.setPhysiology('app');
+      this.clock.advance(days * DAY_MS);
+      this.reconciling = false;
+      if (wasRunning && this.appState === 'active') this.engine?.start();
+    }
+    this.publish();
+    learningStore.set((v) => v + 1);
+    await this.save();
+  }
+
+  // Experimento local: Milo (días regulares) y Luna (días irregulares) nacen con el mismo cerebro
+  async runRoutineLab(days = 30, onProgress?: (msg: string) => void): Promise<{ milo: RoutineLabPet; luna: RoutineLabPet }> {
+    const yieldFn = () => new Promise<void>((r) => setTimeout(r, 0));
+    const run = async (name: string, regime: 'consistent' | 'irregular'): Promise<RoutineLabPet> => {
+      const { session, clock } = createLivingPet(name, 11);
+      let d = 0;
+      await liveDays(session, clock, { regime, days, seed: 7 }, async () => { onProgress?.(`${name}: día ${++d} de ${days}…`); await yieldFn(); });
+      const habits = session.habits(clock.now());
+      onProgress?.(`${name}: prueba en el mismo contexto…`);
+      return { name, headline: routineHeadline(habits, name), cards: interpretRoutines(habits, name), freeRun: await freeRun(session, 4, 21, yieldFn) };
+    };
+    return { milo: await run('Milo', 'consistent'), luna: await run('Luna', 'irregular') };
+  }
+
+  // ---------- Crecimiento (desarrollo) ----------
+  devGrowth(action: 'progress' | 'add' | 'age' | 'eligible' | 'trigger', value = 0): void {
+    const s = this.session;
+    if (!s) return;
+    if (action === 'progress') s.devSetDevelopmentProgress(value);
+    else if (action === 'add') s.devAddDevelopment(value);
+    else if (action === 'age') s.devSatisfyAge();
+    else if (action === 'eligible') { s.devSatisfyAge(); s.devSetDevelopmentProgress(1); }
+    else if (action === 'trigger') s.transition();
+    this.publish();
+    learningStore.set((v) => v + 1);
+  }
+
+  setGrowthPreview(v: number | null): void {
+    devStore.set((d) => ({ ...d, growthPreview: v }));
+  }
+
+  dismissGrowth(): void {
+    growthStore.set(null);
   }
 
   clearNotice(): void {

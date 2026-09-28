@@ -18,17 +18,17 @@ const ITEMS: { kind: WorldInteraction; emoji: string; label: string }[] = [
   { kind: 'water', emoji: '💧', label: 'Agua' },
   { kind: 'treat', emoji: '🍪', label: 'Galleta' },
   { kind: 'call', emoji: '📣', label: 'Llamar' },
-  { kind: 'light', emoji: '💡', label: 'Luz' },
+  { kind: 'light', emoji: '💡', label: 'Lámpara' },
   { kind: 'noise', emoji: '🔔', label: 'Ruido' },
 ];
 
 export function CareBar() {
-  const lightOn = useStore(petStore, (p) => p?.lightOn ?? true);
+  const lightOn = useStore(petStore, (p) => p?.lampOn ?? false);
   return (
     <View style={styles.bar} accessibilityRole="toolbar">
       {ITEMS.map((it) => {
         const emoji = it.kind === 'light' ? (lightOn ? '🌙' : '💡') : it.emoji;
-        const label = it.kind === 'light' ? (lightOn ? 'Apagar' : 'Encender') : it.label;
+        const label = it.kind === 'light' ? (lightOn ? 'Apagar' : 'Lámpara') : it.label;
         return (
           <Squishable key={it.kind} accessibilityLabel={label} onPress={() => SessionController.interact(it.kind)} style={styles.btn}>
             <Text style={styles.emoji}>{emoji}</Text>

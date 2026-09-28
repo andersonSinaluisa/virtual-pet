@@ -16,6 +16,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { timeOfDayLabel } from '@/core/explain/Narrator';
 import { CareBar } from '@/components/home/CareBar';
+import { RewardButton } from '@/components/learning/RewardButton';
 import { InventorySheet } from '@/components/home/InventorySheet';
 import { StatusCard } from '@/components/home/StatusCard';
 import { PetStage } from '@/components/scene/PetStage';
@@ -59,7 +60,10 @@ export default function Home() {
   }, [capture]);
 
   if (!pet) return <View style={styles.root} />;
-  const time = timeOfDayLabel(new Date());
+  // Hora del MUNDO (reloj inyectado), no la del render
+  const m = pet.minuteOfDay;
+  const time = timeOfDayLabel(new Date(2000, 0, 1, Math.floor(m / 60), m % 60));
+  const hhmm = `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
   // Sin scroll: todo cabe entre la cabecera y la barra de pestañas; el escenario ocupa el resto
   const bottom = Math.max(insets.bottom, 10) + 72 + spacing.sm;
 
@@ -76,9 +80,9 @@ export default function Home() {
         ) : null}
 
         <View style={styles.hud}>
-          <Chip label={`${pet.name} · Nivel ${pet.level}`} icon="paw" color={colors.text} style={shadows.soft} />
+          <Chip label={`${pet.name} · ${pet.stageLabel}`} icon="paw" color={colors.text} style={shadows.soft} />
           <Chip label={`${pet.moodEmoji} ${pet.mood.split(' y ')[0]}`} color={colors.secondary} style={shadows.soft} />
-          <Chip label={TIME_EMOJI[time.icon]} bg={alpha(colors.primaryFixed, 0.7)} color={colors.onPrimaryFixed} style={shadows.soft} />
+          <Chip label={`${TIME_EMOJI[time.icon]} · ${hhmm}`} bg={alpha(colors.primaryFixed, 0.7)} color={colors.onPrimaryFixed} style={shadows.soft} />
         </View>
 
         <View style={styles.stage}>
@@ -90,6 +94,7 @@ export default function Home() {
               <Squishable onPress={() => SessionController.placeItem('ball')} accessibilityLabel="Darle la pelota roja" style={styles.ball}>
                 <Icon name="ball" size={24} color={colors.surfaceBright} />
               </Squishable>
+              <RewardButton style={styles.reward} />
               <View pointerEvents="none" style={styles.status}>
                 <Text variant="labelSm" color={colors.textMuted} numberOfLines={1}>👆 Tócalo para darle mimos</Text>
               </View>
@@ -126,6 +131,7 @@ const styles = StyleSheet.create({
     boxShadow: '0 6px 14px rgba(186,26,26,0.35)',
   },
   status: { position: 'absolute', right: 14, bottom: 22, maxWidth: '62%', paddingHorizontal: 12, paddingVertical: 6, borderRadius: radius.full, backgroundColor: alpha(colors.surfaceContainerLowest, 0.9) },
+  reward: { position: 'absolute', alignSelf: 'center', bottom: 64 },
   actions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   flex: { flex: 1 },
 });

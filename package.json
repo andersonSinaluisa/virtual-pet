@@ -54,7 +54,13 @@
     "lint": "expo lint",
     "test": "jest",
     "typecheck": "tsc --noEmit",
-    "validate:brain": "jest src/core/__tests__/brainValidation.test.ts"
+    "validate:brain": "jest src/core/__tests__/brainValidation.test.ts",
+    "report:learning": "jest src/core/__tests__/learningReport.test.ts",
+    "test:learning": "jest src/core/__tests__/learning",
+    "report:routines": "jest src/core/__tests__/routineReport.test.ts",
+    "test:routines": "jest src/core/__tests__/routines",
+    "report:growth": "jest src/core/__tests__/growthReport.test.ts",
+    "test:growth": "jest src/core/__tests__/growth"
   },
   "private": true,
   "jest": {

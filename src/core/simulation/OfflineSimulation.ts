@@ -15,6 +15,8 @@
  * para no bloquear la UI.
  */
 import { ACTION_LIST, type Action } from '../brain/Actions';
+import { subjectLabel } from '../memory/subjects';
+import type { EpisodeRecord, SubjectKey } from '../memory/types';
 import type { GameSession } from '../session/GameSession';
 import type { PetStats } from './SimConfig';
 
@@ -28,6 +30,7 @@ export interface AwayReport {
   foodEaten: number;
   waterDrunk: number;
   slept: boolean;
+  grewPending: boolean; // v6: alcanzó el momento de crecer mientras no estabas (se vivirá al volver)
   highlights: string[];
 }
 
@@ -55,11 +58,18 @@ export async function simulateAway(session: GameSession, elapsedMs: number, yiel
   world.setPlayerPresent(false);
   world.drainEvents(); // la salida del jugador no es un evento que la mascota "vea" ahora
 
+  // v5: cada tick offline ocurre a su hora del mundo (la noche y la luz pasan de verdad)
+  // v6: el desarrollo sigue mientras no estás, más despacio y con tope; nunca crece solo (queda pendiente)
+  session.growth.beginAway();
+  const stage0 = session.growth.stage;
+  const endAt = session.clock.now();
+  const startAt = endAt - elapsedMs;
   let done = 0;
   while (done < ticks) {
     const n = Math.min(cfg.offline.chunk, ticks - done);
     for (let i = 0; i < n; i++) {
       const prev = new Set(session.sim.last.active);
+      session.setTimeOverride(startAt + ((done + i + 1) / ticks) * elapsedMs);
       const r = session.tick({ timeScale, offline: true });
       for (const a of r.active) if (!prev.has(a)) onsets[a] = (onsets[a] ?? 0) + 1;
       if (world.pet.asleep) slept = true;
@@ -67,25 +77,34 @@ export async function simulateAway(session: GameSession, elapsedMs: number, yiel
     done += n;
     await yieldFn();
   }
+  session.setTimeOverride(null);
+  session.growth.endAway();
   if (wasPresent) world.setPlayerPresent(true);
 
+  // Solo lo que pasó de verdad en la simulación (episodios reales, no plantillas)
+  const lived = session.memory.episodes.filter((e) => e.offline && e.start >= startAt);
   const after = world.pet.snapshot();
   const foodEaten = Math.max(0, food0 - world.foodSources().reduce((s, o) => s + o.amount, 0));
   const waterDrunk = Math.max(0, water0 - (world.firstOfType('water')?.amount ?? 0));
-  return { elapsedMs, simulatedTicks: ticks, timeScale, before, after, actionOnsets: onsets, foodEaten, waterDrunk, slept, highlights: highlights(session.profile.name, onsets, { foodEaten, waterDrunk, slept, before, after }) };
+  const grewPending = !!session.growth.state.pending && session.growth.stage === stage0;
+  return { elapsedMs, simulatedTicks: ticks, timeScale, before, after, actionOnsets: onsets, foodEaten, waterDrunk, slept, grewPending, highlights: highlights(session.profile.name, onsets, { foodEaten, waterDrunk, slept, before, after, lived }) };
 }
 
 function highlights(
   name: string,
   onsets: Partial<Record<Action, number>>,
-  x: { foodEaten: number; waterDrunk: number; slept: boolean; before: PetStats; after: PetStats },
+  x: { foodEaten: number; waterDrunk: number; slept: boolean; before: PetStats; after: PetStats; lived: readonly EpisodeRecord[] },
 ): string[] {
   const out: string[] = [];
   const n = (a: Action) => onsets[a] ?? 0;
-  if (x.slept) out.push(`Durmió una siesta en su camita.`);
+  const sleptMin = x.lived.filter((e) => e.kind === 'sleep').reduce((s, e) => s + (e.end - e.start) / 60_000, 0);
+  if (sleptMin >= 90) out.push(`Durmió en su camita (unas ${Math.round(sleptMin / 60)} horas).`);
+  else if (x.slept) out.push(`Durmió una siesta en su camita.`);
   if (x.foodEaten > 0.05) out.push(`Fue a comer a su plato.`);
   if (x.waterDrunk > 0.05) out.push(`Bebió agua.`);
-  if (n('PLAY') + n('PICK_UP_OBJECT') > 0) out.push(`Jugó un rato con sus juguetes.`);
+  const toys = [...new Set(x.lived.filter((e) => e.kind === 'play' && e.subject).map((e) => e.subject as SubjectKey))];
+  if (toys.length) out.push(`Jugó con ${toys.slice(0, 2).map(subjectLabel).join(' y ')}.`);
+  else if (n('PLAY') + n('PICK_UP_OBJECT') > 0) out.push(`Jugó un rato con sus juguetes.`);
   if (n('EXPLORE') + n('INVESTIGATE') > 1) out.push(`Exploró la habitación y olfateó cosas.`);
   if (n('ASK_ATTENTION') + n('CRY') > 1) out.push(`Te echó de menos: miró varias veces hacia la puerta.`);
   if (n('HIDE') + n('GET_SCARED') > 0) out.push(`Algo lo asustó y buscó refugio.`);

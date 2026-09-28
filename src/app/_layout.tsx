@@ -7,6 +7,8 @@ import { StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { GrowthCelebration } from '@/components/growth/GrowthCelebration';
+import { DiscoveryHost } from '@/components/learning/DiscoveryHost';
 import { PrimaryButton } from '@/components/ui/Buttons';
 import { Text } from '@/components/ui/Text';
 import { ToastHost } from '@/components/ui/ToastHost';
@@ -47,6 +49,8 @@ export default function RootLayout() {
             </Stack.Protected>
           </Stack>
         )}
+        {status === 'ready' ? <DiscoveryHost /> : null}
+        {status === 'ready' ? <GrowthCelebration /> : null}
         <ToastHost />
       </SafeAreaProvider>
     </GestureHandlerRootView>

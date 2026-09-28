@@ -18,12 +18,25 @@
  *  - la llamada del jugador (`playerCalling`, evento transitorio);
  *  - "galletitas": fuentes de comida pequeñas junto al jugador;
  *  - contador de investigación por objeto (la caja misteriosa se abre).
+ *
+ * v5 (rutinas): el mundo conoce la HORA (la recibe de un WorldClock) y tiene
+ * luz natural. `lightOn` es la LÁMPARA; la luz real es
+ * lightLevel = max(luz del día, lámpara). También expone zonas (cama, comida,
+ * juego, ventana), "acabas de volver" y la actividad reciente. Todo es
+ * percepción: el mundo nunca decide qué hace la mascota.
  */
-import type { SensorKey } from '../brain/BrainConfig';
+
+import { CLOCK_SENSORS, OBJECT_CHANNELS, ZONE_SENSORS, type SensorKey } from '../brain/BrainConfig';
+import { clockInfo, clockPopulation } from '../time/WorldClock';
 import { clamp01 } from '../random';
 import { ITEMS, NOVEL_KINDS, isItemKind, type ItemKind, type ObjectType } from '../world/Items';
 import { Pet, type Point } from './Pet';
 import type { SimConfig } from './SimConfig';
+
+const LAMP_LEVEL = 0.8;
+const ZONE_RADIUS = 0.28;
+const RETURN_DECAY = 0.95;
+const ACTIVITY_EMA = 0.03;
 
 export interface WorldObject extends Point {
   id: number;
@@ -52,6 +65,8 @@ export interface Player extends Point {
   wantsTouch: boolean;
   calling: number; // intensidad de la llamada (decae)
   returnHome: boolean; // tras acariciar, la mano vuelve a la pantalla
+  returned: number; // v5: "acabas de volver" (1 al entrar, decae)
+  lastSeenAt: number; // v5: hora del mundo en que estuvo presente por última vez
 }
 
 export type WorldEventType =
@@ -69,12 +84,17 @@ export type Perception = Record<SensorKey, number>;
 
 export interface WorldState {
   objects: WorldObject[];
-  lightOn: boolean;
+  lightOn: boolean; // lámpara
   nextId: number;
   tick: number;
 }
 
+export type ZoneKey = 'bed' | 'food' | 'play' | 'window';
+
 type NewObject = Partial<WorldObject> & Pick<WorldObject, 'type' | 'kind' | 'x' | 'y'>;
+
+// v5: atenuación sensorial durante el sueño (ojos cerrados / interocepción amortiguada)
+const SLEEP_SENSING = { eyes: 0.15, body: 0.6 } as const;
 
 export class World {
   readonly pet: Pet;
@@ -86,6 +106,14 @@ export class World {
   events: WorldEvent[] = [];
   focusObjectId: number | null = null;
   exploreTarget: Point | null = null;
+  // Atención por tipo de objeto, calculada por la Simulation a partir de los
+  // spikes recientes de las neuronas de atención (v4). Solo sesga el FOCO.
+  attention: Partial<Record<ItemKind, number>> = {};
+  // v5: tiempo y contexto
+  clockMs = 0;
+  daylight = 1; // sin reloj (tests unitarios antiguos): siempre de día
+  private clockSignal: number[] = [0, 0, 0, 0, 0, 0];
+  recentActivity = 0;
   private _nextId = 1;
 
   constructor(private readonly config: SimConfig) {
@@ -109,13 +137,50 @@ export class World {
     this.addObject({ type: 'toy', kind: 'ball', x: 0.6, y: 0.75, interest: 0.3, pickable: true });
 
     const home = w.playerHome;
-    this.player = { present: false, x: home.x, y: home.y, tx: home.x, ty: home.y, speed: 0, touchTicks: 0, wantsTouch: false, calling: 0, returnHome: false };
-    this.lightOn = true;
+    this.player = { present: false, x: home.x, y: home.y, tx: home.x, ty: home.y, speed: 0, touchTicks: 0, wantsTouch: false, calling: 0, returnHome: false, returned: 0, lastSeenAt: 0 };
+    this.lightOn = false; // la lámpara empieza apagada: de día hay luz natural
+    this.recentActivity = 0;
     this.sound = { level: 0, x: 0.5, y: 0.5 };
     this.tick = 0;
     this.events = [];
     this.focusObjectId = null;
     this.exploreTarget = null;
+  }
+
+  // ---------- Tiempo y luz (v5) ----------
+  setClock(ms: number): void {
+    const info = clockInfo(ms);
+    this.clockMs = ms;
+    this.daylight = info.daylight;
+    this.clockSignal = clockPopulation(info.timeSin, info.timeCos);
+    if (this.player.present) this.player.lastSeenAt = ms;
+  }
+
+  // Luz real de la habitación (0..1): la del día o la lámpara, la mayor
+  get lightLevel(): number {
+    return Math.max(this.daylight, this.lightOn ? LAMP_LEVEL : 0);
+  }
+
+  // Centro de cada zona: la cama y el plato se pueden mover; la zona los sigue
+  zoneCenter(z: ZoneKey): Point {
+    if (z === 'bed') return this.firstOfType('bed') ?? { x: 0.15, y: 0.18 };
+    if (z === 'food') return this.firstOfType('food') ?? { x: 0.78, y: 0.22 };
+    if (z === 'play') return { x: 0.55, y: 0.7 };
+    return { x: 0.5, y: 0.05 };
+  }
+
+  zoneValue(z: ZoneKey, p: Point = this.pet): number {
+    return clamp01(1 - this.distance(p, this.zoneCenter(z)) / ZONE_RADIUS);
+  }
+
+  // Zona en la que está (para contexto de experiencias y hábitos), o null
+  currentZone(p: Point = this.pet): ZoneKey | null {
+    let best: ZoneKey | null = null, v = 0.25;
+    for (const z of ['bed', 'food', 'play', 'window'] as const) {
+      const x = this.zoneValue(z, p);
+      if (x > v) { v = x; best = z; }
+    }
+    return best;
   }
 
   addObject(props: NewObject): WorldObject {
@@ -202,6 +267,10 @@ export class World {
     }
     pl.calling *= w.callDecay;
     if (pl.calling < 0.02) pl.calling = 0;
+    pl.returned *= RETURN_DECAY;
+    if (pl.returned < 0.02) pl.returned = 0;
+    // Actividad reciente: media móvil del movimiento (el cuerpo "recuerda" el esfuerzo)
+    this.recentActivity += (clamp01(pet.speed / 1.5) - this.recentActivity) * ACTIVITY_EMA * timeScale;
 
     // Sonido y novedad se desvanecen
     pet.change('fear', this.sound.level * pc.soundFear);
@@ -228,7 +297,7 @@ export class World {
       maxNovelty = Math.max(maxNovelty, o.novelty);
     }
     pet.change('curiosity', (maxNovelty * pc.noveltyCuriosity + pet.boredom * pc.boredomCuriosity) * timeScale);
-    if (!this.lightOn) pet.change('fear', pc.darknessFear * timeScale);
+    pet.change('fear', pc.darknessFear * (1 - this.lightLevel) * timeScale);
 
     // Las galletitas se acaban
     this.objects = this.objects.filter((o) => o.type !== 'treat' || o.amount > 0);
@@ -242,7 +311,8 @@ export class World {
   // ---------- Percepción: mundo → valores 0..1 (todavía sin neuronas) ----------
   perceive(): Perception {
     const pet = this.pet, pl = this.player, w = this.config.world;
-    const visibility = this.lightOn ? 1 : 0.45;
+    const light = this.lightLevel;
+    const visibility = 0.45 + 0.55 * light;
     const avail = (o: WorldObject | null) => (o ? 0.4 + 0.6 * this.proximity(pet, o) : 0);
 
     const food = this.nearest(this.foodSources());
@@ -250,39 +320,76 @@ export class World {
     const toy = this.nearest(this.toys().filter((t) => t.id !== pet.carrying));
 
     // Objeto percibido: el más llamativo (novedad + interés), atenuado por distancia y luz.
-    let focus: WorldObject | null = null, salience = 0;
+    // v4: el foco se sesga además por la atención que la RED dedica a cada tipo
+    // de objeto (salida de sus neuronas de atención). El sensor
+    // interestingObjectVisible usa la saliencia sin sesgo (sin realimentación).
+    let focus: WorldObject | null = null, salience = 0, best = 0;
     for (const o of this.objects) {
       if (o.fixed && o.type !== 'hideout') continue;
       const s = (o.novelty + o.interest * 0.6) * visibility * (0.4 + 0.6 * this.proximity(pet, o));
-      if (s > salience) { salience = s; focus = o; }
+      const biased = s + w.attentionGain * Math.min(w.attentionCap, this.attention[o.kind] ?? 0) * visibility;
+      salience = Math.max(salience, s);
+      if (biased > best) { best = biased; focus = o; }
     }
-    this.focusObjectId = focus && salience > 0.05 ? focus.id : null;
+    this.focusObjectId = focus && best > 0.05 ? focus.id : null;
 
     const maxNovelty = this.objects.reduce((m, o) => Math.max(m, o.novelty), 0);
+    // v5: dormido tiene los ojos cerrados y siente menos (umbral de despertar más alto).
+    // Fisiología, no horario: un ruido, una caricia o una llamada lo siguen despertando.
+    const eyes = pet.asleep ? SLEEP_SENSING.eyes : 1, body = pet.asleep ? SLEEP_SENSING.body : 1;
 
-    return {
-      hunger: pet.hunger,
-      thirst: pet.thirst,
+    const perception: Perception = {
+      hunger: pet.hunger * body,
+      thirst: pet.thirst * body,
       fatigue: pet.fatigue,
-      boredom: pet.boredom,
-      affectionNeed: 1 - pet.affection,
+      boredom: pet.boredom * body,
+      affectionNeed: (1 - pet.affection) * body,
       energy: pet.energy,
       fear: pet.fear,
-      curiosity: pet.curiosity,
-      playerNear: pl.present ? clamp01(1 - this.distance(pet, pl) / w.nearRange) : 0,
+      curiosity: pet.curiosity * body,
+      playerNear: pl.present ? clamp01(1 - this.distance(pet, pl) / w.nearRange) * eyes : 0,
       playerTouching: pl.touchTicks > 0 ? 1 : 0,
-      playerMoving: pl.present ? clamp01(pl.speed) : 0,
-      foodAvailable: avail(food),
-      waterAvailable: water && water.amount > 0 ? avail(water) : 0,
+      playerMoving: pl.present ? clamp01(pl.speed) * eyes : 0,
+      foodAvailable: avail(food) * eyes,
+      waterAvailable: water && water.amount > 0 ? avail(water) * eyes : 0,
       bedAvailable: avail(this.firstOfType('bed')),
-      toyAvailable: avail(toy),
-      interestingObjectVisible: clamp01(salience),
-      hidingPlaceAvailable: avail(this.firstOfType('hideout')),
-      darkness: this.lightOn ? 0 : 1,
+      toyAvailable: avail(toy) * eyes,
+      interestingObjectVisible: clamp01(salience) * eyes,
+      hidingPlaceAvailable: avail(this.firstOfType('hideout')) * eyes,
+      darkness: 1 - light,
       loudSound: clamp01(this.sound.level),
-      newObjectDetected: clamp01(maxNovelty * (this.lightOn ? 1 : 0.6)),
+      newObjectDetected: clamp01(maxNovelty * (0.6 + 0.4 * light)) * eyes,
       playerCalling: pl.present ? clamp01(pl.calling) : 0,
+      ...this.objectPerception(visibility * eyes),
+      ...this.contextPerception(light),
     };
+    if (pet.asleep) perception.playerReturned *= SLEEP_SENSING.eyes;
+    return perception;
+  }
+
+  // v5: hora (código de población), luz, lugar, "acabas de volver", actividad reciente
+  private contextPerception(light: number): Record<(typeof CLOCK_SENSORS)[number] | (typeof ZONE_SENSORS)[number] | 'lightLevel' | 'playerReturned' | 'recentActivity', number> {
+    const [time00, time04, time08, time12, time16, time20] = this.clockSignal;
+    return {
+      time00, time04, time08, time12, time16, time20,
+      lightLevel: light,
+      zoneBed: this.zoneValue('bed'), zoneFood: this.zoneValue('food'), zonePlay: this.zoneValue('play'), zoneWindow: this.zoneValue('window'),
+      playerReturned: this.player.present ? clamp01(this.player.returned) : 0,
+      recentActivity: clamp01(this.recentActivity),
+    };
+  }
+
+  // Estímulos identificables: cuánto "ve" cada objeto concreto (1 si lo lleva en la boca)
+  private objectPerception(visibility: number): Record<(typeof OBJECT_CHANNELS)[number]['sensor'], number> {
+    const pet = this.pet;
+    const out = {} as Record<(typeof OBJECT_CHANNELS)[number]['sensor'], number>;
+    for (const ch of OBJECT_CHANNELS) {
+      const list = this.objects.filter((o) => o.kind === ch.kind);
+      if (list.some((o) => o.id === pet.carrying)) { out[ch.sensor] = 1; continue; }
+      const o = this.nearest(list);
+      out[ch.sensor] = o ? clamp01(visibility * (0.4 + 0.6 * this.proximity(pet, o))) : 0;
+    }
+    return out;
   }
 
   // ---------- Interacciones del jugador (solo cambian el mundo) ----------
@@ -297,7 +404,9 @@ export class World {
     const home = this.config.world.playerHome;
     if (present) {
       pl.x = pl.tx = home.x; pl.y = pl.ty = home.y; pl.speed = 0;
-      this._event('PLAYER_ENTERED', 'playerNear');
+      pl.returned = 1;
+      pl.lastSeenAt = this.clockMs;
+      this._event('PLAYER_ENTERED', 'playerReturned');
     } else {
       pl.touchTicks = 0; pl.wantsTouch = false; pl.calling = 0;
       this._event('PLAYER_LEFT', 'playerNear');
@@ -494,7 +603,7 @@ export class World {
     const need: [ObjectType, ItemKind, Point][] = [['bed', 'bed', { x: 0.15, y: 0.18 }], ['food', 'bowl', { x: 0.78, y: 0.22 }], ['water', 'water', { x: 0.93, y: 0.45 }], ['hideout', 'tent', { x: 0.08, y: 0.78 }]];
     this._nextId = Math.max(s.nextId || 1, ...this.objects.map((o) => o.id + 1));
     for (const [type, kind, p] of need) if (!this.firstOfType(type)) this.addObject({ type, kind, ...p, fixed: true });
-    this.lightOn = s.lightOn !== false;
+    this.lightOn = s.lightOn === true;
     this.tick = Number.isFinite(s.tick) ? s.tick : 0;
     if (this.pet.carrying !== null && !this.getObject(this.pet.carrying)) this.pet.carrying = null;
   }

@@ -10,6 +10,8 @@
  */
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
 
+import type { VoiceProfile } from '@/core/growth/GrowthConfig';
+
 export type AudioCategory = 'music' | 'ambient' | 'pet' | 'effects' | 'ui';
 
 const SOUNDS = {
@@ -25,6 +27,14 @@ const SOUNDS = {
 
 export type SoundName = keyof typeof SOUNDS;
 
+/*
+ * v6: perfil de voz por edad. Mientras no haya grabaciones por etapa, la voz de
+ * la mascota se reproduce más aguda (bebé) o más grave (adulto) SIN corregir el
+ * tono. Cuando existan assets por etapa, se añaden aquí (VOICE_ASSETS) sin tocar
+ * a quien llama a play().
+ */
+export const VOICE_RATE: Record<VoiceProfile, number> = { baby: 1.3, young: 1.08, adult: 0.94 };
+
 class AudioManagerImpl {
   private players = new Map<SoundName, AudioPlayer>();
   private volumes: Record<AudioCategory, number> = { music: 0.5, ambient: 0.35, pet: 0.8, effects: 0.8, ui: 0.5 };
@@ -32,6 +42,11 @@ class AudioManagerImpl {
   private loops = new Set<SoundName>();
   private suspended = false;
   private ready = false;
+  private voice: VoiceProfile = 'young';
+
+  setVoiceProfile(v: VoiceProfile): void {
+    this.voice = v;
+  }
 
   async init(): Promise<void> {
     if (this.ready) return;
@@ -65,6 +80,10 @@ class AudioManagerImpl {
     try {
       const p = this.player(name);
       p.volume = this.effective(name);
+      if (SOUNDS[name].category === 'pet') {
+        p.shouldCorrectPitch = false;
+        p.setPlaybackRate(VOICE_RATE[this.voice]);
+      }
       void p.seekTo(0).then(() => p.play()).catch(() => {});
     } catch (e) {
       console.warn('[audio] no se pudo reproducir', name, e);

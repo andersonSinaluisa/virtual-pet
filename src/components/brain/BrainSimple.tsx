@@ -12,6 +12,7 @@ import type { ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import { actionPhrase, circuitEmotion, explainAction, sensorPhrase } from '@/core/explain/CausalChain';
+import { explainWhy } from '@/core/explain/Why';
 import type { GameSession } from '@/core/session/GameSession';
 import { Card } from '@/components/ui/Surfaces';
 import { Text } from '@/components/ui/Text';
@@ -32,8 +33,11 @@ function Step({ emoji, label, text, bg }: { emoji: string; label: string; text: 
 const Arrow = (): ReactNode => <Text style={styles.arrow} accessibilityElementsHidden>⬇️</Text>;
 
 export function BrainSimple({ session }: { session: GameSession }) {
-  const chain = explainAction(session.sim.brain, session.sim.trace);
+  // La última decisión relevante guardada (DecisionTrace); si no hay, la cadena más reciente
+  const decision = session.decisions[0] ?? null;
+  const chain = decision?.chain ?? explainAction(session.sim.brain, session.sim.trace);
   const name = session.profile.name;
+  const why = decision ? explainWhy(decision, name, session.memory, session.plasticity, { habits: session.habits() }) : null;
   if (!chain) {
     return (
       <Card tone="muted" style={styles.empty}>
@@ -56,6 +60,8 @@ export function BrainSimple({ session }: { session: GameSession }) {
       <Arrow />
       <Step emoji="🐾" label="Decidió" text={did} bg={colors.secondaryContainer} />
       <View style={styles.why}>
+        {why?.goodHistory ? <Text variant="labelLg" color={colors.primary}>💛 {why.goodHistory}</Text> : null}
+        {why?.context.map((c) => <Text key={c} variant="labelLg" color={colors.tertiary}>🌙 {c}</Text>)}
         <Text variant="bodyLg">
           🧠 Nadie le dio una orden: su cerebro juntó lo que notó y lo que sentía, y {name} decidió solito.
         </Text>

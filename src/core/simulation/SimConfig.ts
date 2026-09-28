@@ -54,12 +54,45 @@ export interface SimConfig {
     maxThrowSpeed: number; // móvil: unidades de mundo por tick
     treatAmount: number; // móvil: "galletita" (una fuente de comida pequeña)
     playerHome: { x: number; y: number }; // móvil: el jugador "está" delante de la pantalla
+    attentionGain: number; // v4: cuánto sesga la atención neuronal la elección del foco
+    attentionCap: number;
+    attentionDecay: number; // decaimiento por tick de la actividad de atención
   };
   offline: {
     maxTicks: number; // ticks reales de SNN como máximo al volver del background
     maxTimeScale: number; // compresión máxima de la deriva por tick
     chunk: number; // ticks por bloque asíncrono
   };
+}
+
+/*
+ * Perfiles de fisiología. Los efectos van POR TICK neural:
+ *   app  la app en tiempo real (3 ticks/s): necesidades rápidas para que haya algo que ver
+ *   day  simulación a escala de días (1 tick = 1 minuto de mundo): hambre, sed, aburrimiento y
+ *        cariño cambian a un ritmo compatible con un día de 1440 ticks (si no, el hambre despierta
+ *        a la mascota cada hora de la noche). El cansancio es igual en ambos perfiles.
+ */
+export type PhysiologyProfile = 'app' | 'day';
+export const DAY_SCALE_NEEDS = 0.35;
+
+export interface BodyModifiers {
+  needs: Partial<Record<PetStat, number>>; // × deriva (etapa de vida)
+  speed: number; // × velocidad base
+}
+
+const NO_BODY_MODIFIERS: BodyModifiers = { needs: {}, speed: 1 };
+
+// Recalcula el cuerpo desde la base: perfil de fisiología × moduladores de etapa (nunca acumula)
+export function applyPhysiology(cfg: SimConfig, profile: PhysiologyProfile, body: BodyModifiers = NO_BODY_MODIFIERS): void {
+  const base = createSimConfig();
+  const k = profile === 'day' ? DAY_SCALE_NEEDS : 1;
+  for (const s of PET_STATS) {
+    const b = base.pet.drift[s];
+    if (b === undefined) continue;
+    const scaled = s === 'hunger' || s === 'thirst' || s === 'boredom' || s === 'affection' ? b * k : b;
+    cfg.pet.drift[s] = scaled * (body.needs[s] ?? 1);
+  }
+  cfg.movement.baseSpeed = base.movement.baseSpeed * body.speed;
 }
 
 export function createSimConfig(overrides: { rng?: Rng } = {}): SimConfig {
@@ -74,7 +107,8 @@ export function createSimConfig(overrides: { rng?: Rng } = {}): SimConfig {
       initial: { hunger: 0.35, thirst: 0.3, fatigue: 0.2, boredom: 0.4, affection: 0.6, energy: 0.75, fear: 0.0, curiosity: 0.3 },
       // Cambio por tick sin que ocurra nada.
       drift: {
-        hunger: 0.002, thirst: 0.0025, fatigue: 0.0012, boredom: 0.002,
+        // v5: fatigue 0.0012 → 0.0008 (ver ActionSystem.SLEEP y docs/routine-results.md)
+        hunger: 0.002, thirst: 0.0025, fatigue: 0.0008, boredom: 0.002,
         affection: -0.0012, energy: 0.001, // la energía se recupera sola si no gasta
       },
       fearDecay: 0.95,
@@ -103,11 +137,14 @@ export function createSimConfig(overrides: { rng?: Rng } = {}): SimConfig {
       noveltyDecay: 0.94,
       maxNovelObjects: 4,
       nearRange: 0.6,
-      callDecay: 0.8, // mismo decaimiento que un ruido fuerte (soundDecay)
+      callDecay: 0.9, // una llamada ("¡Milo, Milo!") dura más que un ruido puntual
       throwFriction: 0.8,
       maxThrowSpeed: 0.12,
       treatAmount: 0.3,
       playerHome: { x: 0.5, y: 0.98 },
+      attentionGain: 0.2,
+      attentionCap: 4,
+      attentionDecay: 0.85,
     },
     offline: {
       maxTicks: 900,

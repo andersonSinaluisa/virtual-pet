@@ -19,6 +19,8 @@ export interface PetBodyState extends PetStats {
   carrying: number | null;
 }
 
+const SLEEP_METABOLISM = 0.3;
+
 export class Pet implements PetStats {
   static readonly STATS = PET_STATS;
 
@@ -64,7 +66,9 @@ export class Pet implements PetStats {
     const d = this.cfg.drift;
     for (const stat of PET_STATS) {
       const v = d[stat];
-      if (v) this.change(stat, v * timeScale);
+      // Dormido, el metabolismo va más lento (fisiología, no horario): el hambre no lo despierta cada hora
+      const slow = this.asleep && (stat === 'hunger' || stat === 'thirst' || stat === 'boredom' || stat === 'affection') ? SLEEP_METABOLISM : 1;
+      if (v) this.change(stat, v * timeScale * slow);
     }
     this.fear *= Math.pow(this.cfg.fearDecay, timeScale);
     this.curiosity *= Math.pow(this.cfg.curiosityDecay, timeScale);

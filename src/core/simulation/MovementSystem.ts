@@ -11,7 +11,7 @@ import type { SimConfig } from './SimConfig';
 import type { World } from './World';
 
 export type MoveIntent =
-  | { kind: 'seek'; target: Point; speed: number; stop: number }
+  | { kind: 'seek'; target: Point; speed: number; stop: number; priority?: number }
   | { kind: 'flee'; from: Point; speed: number }
   | { kind: 'wander'; speed: number }
   | { kind: 'brake'; factor: number }
@@ -25,8 +25,14 @@ export class MovementSystem {
     const pet = world.pet;
     let vx = 0, vy = 0, brake = 1, boost = 1;
 
+    // v5: dos destinos a la vez (el agua y la cama) no se promedian: se sigue la decisión más reciente
+    // (antes la mascota quedaba a medio camino entre los dos y no llegaba a ninguno)
+    let seek: Extract<MoveIntent, { kind: 'seek' }> | null = null;
+    for (const it of intents) if (it.kind === 'seek' && (!seek || (it.priority ?? 0) > (seek.priority ?? 0))) seek = it;
+
     for (const it of intents) {
       if (it.kind === 'seek') {
+        if (it !== seek) continue;
         const dx = it.target.x - pet.x, dy = it.target.y - pet.y, d = Math.hypot(dx, dy);
         if (d > it.stop) { vx += (dx / d) * it.speed; vy += (dy / d) * it.speed; }
       } else if (it.kind === 'flee') {

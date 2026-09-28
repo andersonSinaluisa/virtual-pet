@@ -27,6 +27,7 @@ export interface GameContext {
   addMoment(m: Pick<Moment, 'title' | 'story' | 'tags' | 'icon' | 'subject'> & { keyMoment?: boolean }): void;
   unlock(kind: ItemKind): void;
   ownedItems(): ItemKind[];
+  setEvaluation(on: boolean): void; // congela el aprendizaje mientras se mide
 }
 
 export type GameCommand =

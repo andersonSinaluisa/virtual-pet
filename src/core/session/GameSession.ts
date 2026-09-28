@@ -4,7 +4,9 @@
  * Une las piezas del dominio para UNA mascota:
  *
  *   Simulation (mundo + cerebro) ──► ExperienceRecorder ──► PetMemory
+ *                                  │                      └─► reward ──► SynapticPlasticity ──► pesos
  *                                  ├─► MiniGame activo (observe)
+ *                                  ├─► DecisionTrace ("¿por qué hizo eso?")
  *                                  └─► DiscoveryEvaluator ──► Moments / Discoveries
  *
  * La app (React Native) solo llama a métodos de aquí y escucha eventos.
@@ -12,8 +14,11 @@
  */
 import type { Action } from '../brain/Actions';
 import {
-  BRAIN_CONFIG_VERSION, createBrainConfig, type BrainConfig, type PresetKey, type SensorKey,
+  BRAIN_CONFIG_VERSION, cloneBrainConfig, createBrainConfig, type BrainConfig, type PresetKey, type SensorKey,
 } from '../brain/BrainConfig';
+import { buildDecisionTrace, EXPLAINED_ACTIONS, type DecisionTrace } from '../explain/DecisionTrace';
+import { NATURAL_KINDS, RewardBaseline, rewardFor } from '../learning/RewardModel';
+import { SynapticPlasticity, type LearningEvent, type LearningState } from '../learning/Plasticity';
 import { exportWeights, importWeights, type WeightImportReport } from '../brain/BrainWeights';
 import { computeTraits, type TraitReading } from '../discovery/Personality';
 import { evaluateDiscoveries } from '../discovery/DiscoveryEvaluator';
@@ -21,41 +26,106 @@ import { behaviorLabel, moodEmoji, moodLabel, thoughtFor } from '../explain/Narr
 import type { GameId } from '../games/catalog';
 import { createGame, type AnyGameView, type AnyMiniGame } from '../games';
 import type { GameCommand, GameContext, GameSummary } from '../games/MiniGame';
-import { ExperienceRecorder } from '../memory/ExperienceRecorder';
+import { ExperienceRecorder , buildContext } from '../memory/ExperienceRecorder';
 import { composeAdoption, composeDiscovery, composeFirstTime, makeMoment, moodSentence } from '../memory/MomentComposer';
 import { PetMemory } from '../memory/PetMemory';
-import type { Discovery, Experience, ExperienceKind, Moment, SubjectKey } from '../memory/types';
+import type { Discovery, Experience, ExperienceKind, Moment, SubjectKey , EpisodeRecord } from '../memory/types';
 import {
-  CURRENT_SAVE_VERSION, DEFAULT_INVENTORY, type Growth, type Inventory, type PetProfile, type SaveGame, type SettingsData, type SpeciesKey,
+  CURRENT_SAVE_VERSION, DEFAULT_INVENTORY, DEFAULT_SETTINGS, type Inventory, type PetProfile, type SaveGame, type SettingsData, type SpeciesKey,
 } from '../persistence/SaveGame';
 import { defaultRng, makeId, type Rng } from '../random';
-import { createSimConfig, type PetStat, type PetStats, type SimConfig } from '../simulation/SimConfig';
+import { applyPhysiology, createSimConfig, type PetStat, type PetStats, type PhysiologyProfile, type SimConfig } from '../simulation/SimConfig';
 import { Simulation, type StepOptions, type StepResult } from '../simulation/Simulation';
 import type { World } from '../simulation/World';
 import { ITEMS, type ItemKind } from '../world/Items';
 import { Emitter } from './Emitter';
+import { weightsHash } from '../growth/brainHash';
+import { GROWTH_CONFIG, stageConfig } from '../growth/GrowthConfig';
+import { compareSummaries, compareWithinStage, recapMoments, type StageComparison } from '../growth/GrowthStory';
+import { GrowthSystem, newGrowthState, type Eligibility } from '../growth/GrowthSystem';
+import { stageLabel, type LifeStage } from '../growth/LifeStage';
+
+
+import { roomArea } from '../routines/areas';
+import { detectHabits, type Habit } from '../routines/HabitDetector';
+import { interpretRoutines, routineDiscoveries, snapshotEntries, type RoutineCard } from '../routines/RoutineInterpreter';
+import { clockInfo, type Clock, type TimeOfDay } from '../time/WorldClock';
 
 export interface SessionOptions {
   rng?: Rng;
-  now?: () => number;
+  now?: () => number; // compatibilidad: equivale a un reloj { now }
+  clock?: Clock; // v5: reloj del mundo inyectado (real, simulación o test)
+  physiology?: PhysiologyProfile; // v5: 'day' para simular días a 1 minuto por tick
+  lifeStage?: LifeStage; // v6: etapa al NACER (solo create; experimentos de referencia usan YOUNG)
 }
+
+// v6: lo que se conserva al crecer (se comprueba en cada transición)
+export interface IdentitySnapshot {
+  weightsHash: string;
+  experiences: number;
+  moments: number;
+  episodes: number;
+  discoveries: number;
+}
+
+export interface GrowthEvent {
+  from: LifeStage;
+  to: LifeStage;
+  at: number;
+  petDay: number;
+  before: IdentitySnapshot;
+  after: IdentitySnapshot;
+  brainPreserved: boolean; // mismos pesos antes y después (la transición no toca el cerebro)
+  recap: Moment[]; // 2–3 recuerdos reales
+  comparisons: StageComparison[]; // "antes / ahora" derivado del historial
+  momentId: string;
+}
+
+// Ventana para considerar que la mascota "salió a recibirte" al volver
+const RETURN_WINDOW = 20;
+const RETURN_FAR = 0.3;
+export const GREETING: ReadonlySet<Action> = new Set<Action>(['APPROACH', 'GREET', 'FOLLOW_PLAYER']);
 
 export type SessionEvents = {
   tick: StepResult;
   experience: Experience;
+  growth: GrowthEvent;
   moment: Moment;
   discovery: Discovery;
   gameEnded: GameSummary;
   changed: undefined;
+  learning: LearningEvent;
 };
+
+// Acciones que el jugador puede recompensar justo después (❤️ Recompensar)
+const REWARDABLE: ReadonlySet<Action> = new Set<Action>(['APPROACH', 'FOLLOW_PLAYER', 'INVESTIGATE', 'PICK_UP_OBJECT', 'PLAY', 'GREET']);
+const REWARD_WINDOW = 12; // ticks tras el inicio de la acción
+const REWARD_COOLDOWN = 8;
+const MAX_DECISIONS = 20;
+
+export interface BrainBundle {
+  format: 'milo-brain';
+  version: 1;
+  exportedAt: number;
+  pet: { name: string; species: SpeciesKey; preset: PresetKey };
+  brain: { configVersion: number; weights: SaveGame['brain']['weights']; initialWeights: SaveGame['brain']['initialWeights'] };
+  learning: LearningState;
+  memory?: SaveGame['memory'];
+  personality: string[]; // interpretación (solo informativa)
+  preferences: { subject: string; score: number; positive: number }[];
+}
 
 export type WorldInteraction = 'food' | 'water' | 'toy' | 'novel' | 'noise' | 'light' | 'caress' | 'call' | 'treat';
 
 export interface PetSnapshot {
   name: string;
   species: SpeciesKey;
-  level: number;
-  levelProgress: number; // 0..1 hacia el siguiente nivel
+  // v6: crecimiento (sin XP visible)
+  lifeStage: LifeStage;
+  stageLabel: string;
+  growthVisual: number; // 0..3 continuo (índice de etapa + avance sutil dentro de la etapa)
+  sizeModifier: number; // variación individual del tamaño
+  growthPending: boolean;
   day: number;
   stats: PetStats;
   mood: string;
@@ -67,16 +137,20 @@ export interface PetSnapshot {
   lightOn: boolean;
   tick: number;
   playerPresent: boolean;
+  rewardable: Action | null; // acción reciente que el jugador puede recompensar
+  learnedExperiences: number;
+  // v5: contexto (solo informativo para la UI)
+  minuteOfDay: number;
+  timeOfDay: TimeOfDay;
+  lightLevel: number;
+  lampOn: boolean;
+  area: string;
+  recentActivity: number;
 }
 
 const DAY_MS = 86_400_000;
+const UNSAFE_FOR_GROWTH: ReadonlySet<Action> = new Set<Action>(['PLAY', 'PICK_UP_OBJECT', 'EAT', 'DRINK', 'GET_SCARED', 'HIDE', 'RUN', 'SLEEP']);
 const DISCOVERY_EVERY = 30; // ticks
-
-export function levelFromXp(xp: number): { level: number; progress: number } {
-  const level = 1 + Math.floor(Math.sqrt(Math.max(0, xp) / 25));
-  const cur = 25 * (level - 1) ** 2, next = 25 * level ** 2;
-  return { level, progress: (xp - cur) / (next - cur) };
-}
 
 function startOfDay(t: number): number {
   const d = new Date(t);
@@ -91,36 +165,75 @@ export class GameSession {
   readonly memory: PetMemory;
   readonly recorder = new ExperienceRecorder();
   profile: PetProfile;
-  growth: Growth;
+  growth: GrowthSystem;
   inventory: Inventory;
+  plasticity!: SynapticPlasticity;
+  initialBrain: BrainConfig; // genoma con el que nació (referencia de lo aprendido)
+  readonly decisions: DecisionTrace[] = [];
+  readonly baseline = new RewardBaseline();
+  private lastRewardable: { action: Action; tick: number } | null = null;
+  private lastPlayerRewardTick = -Infinity;
   private activeGame: { id: GameId; game: AnyMiniGame; ctx: GameContext } | null = null;
   private readonly now: () => number;
+  readonly clock: Clock;
+  private timeOverride: number | null = null; // simulación offline: la hora de cada tick pasado
+  private pendingReturn: { tick: number; start: number; minuteOfDay: number; day: number; area: string; light: number; activity: number; offline: boolean; d0: number } | null = null;
+  private lastHabitDay: number | null = null;
+  private physiology: PhysiologyProfile;
+  lastGrowth: GrowthEvent | null = null; // última transición (herramientas: comparar antes/después)
 
-  private constructor(profile: PetProfile, brainConfig: BrainConfig, opts: SessionOptions, memory = new PetMemory()) {
+  private constructor(profile: PetProfile, brainConfig: BrainConfig, opts: SessionOptions, memory = new PetMemory(), initial?: BrainConfig) {
     this.profile = profile;
-    this.now = opts.now ?? (() => Date.now());
+    this.clock = opts.clock ?? { now: opts.now ?? (() => Date.now()) };
+    this.now = () => this.timeOverride ?? this.clock.now();
     this.config = createSimConfig({ rng: opts.rng ?? defaultRng });
+    this.physiology = opts.physiology ?? 'app';
     this.sim = new Simulation(this.config, brainConfig);
     this.memory = memory;
-    this.growth = { xp: 0 };
+    this.growth = new GrowthSystem(newGrowthState(profile.id, profile.adoptedAt, opts.lifeStage ?? 'BABY'));
     this.inventory = { owned: [...DEFAULT_INVENTORY] };
+    this.initialBrain = initial ?? cloneBrainConfig(brainConfig);
+    this.attachPlasticity();
+    this.applyStage();
+  }
+
+  // v6: lo que la ETAPA modula (nunca el cerebro): plasticidad, cuerpo y capacidades
+  private applyStage(): void {
+    const c = stageConfig(this.growth.stage);
+    this.plasticity.stageMultiplier = this.growth.plasticityMultiplier;
+    applyPhysiology(this.config, this.physiology, { needs: c.needs, speed: c.speed });
+    this.sim.actionSystem.gate = (a) => this.growth.gate(a);
+  }
+
+  // (Re)conecta la plasticidad al cerebro actual (tras construir o reconstruir la red)
+  private attachPlasticity(state?: LearningState | null): void {
+    const prev = this.plasticity as SynapticPlasticity | undefined;
+    prev?.detach();
+    this.plasticity = new SynapticPlasticity(this.sim.brain, this.initialBrain);
+    if (state) { this.plasticity.importState(state); this.baseline.import(state.baselines); }
+    else if (prev) this.plasticity.importState(prev.exportState());
   }
 
   // ---------- Creación ----------
   static create(input: { name: string; species: SpeciesKey; preset?: PresetKey }, opts: SessionOptions = {}): GameSession {
-    const now = (opts.now ?? Date.now)();
+    const now = opts.clock ? opts.clock.now() : (opts.now ?? Date.now)();
     const preset = input.preset ?? 'equilibrado';
     const profile: PetProfile = { id: makeId('pet', opts.rng), name: input.name.trim() || 'Milo', species: input.species, adoptedAt: now, preset };
     const s = new GameSession(profile, createBrainConfig(preset), opts);
-    s.memory.addMoment(composeAdoption(profile.name, now));
+    const arrival = composeAdoption(profile.name, now);
+    arrival.lifeStage = s.growth.stage;
+    s.memory.addMoment(arrival);
+    s.growth.addMilestone('ARRIVED', now, 1, null, arrival.id);
     return s;
   }
 
   static fromSave(save: SaveGame, opts: SessionOptions = {}): { session: GameSession; weights: WeightImportReport } {
     const config = createBrainConfig(save.profile.preset);
     const weights = importWeights(config, save.brain.weights);
-    const s = new GameSession(save.profile, config, opts, new PetMemory(save.memory));
-    s.growth = { ...save.growth };
+    const initial = createBrainConfig(save.profile.preset);
+    importWeights(initial, save.brain.initialWeights ?? save.brain.weights);
+    const s = new GameSession(save.profile, config, opts, new PetMemory(save.memory), initial);
+    s.growth = new GrowthSystem(JSON.parse(JSON.stringify(save.growth)) as SaveGame['growth']);
     s.inventory = { owned: [...save.inventory.owned] };
     s.world.importState(save.world);
     s.world.pet.importState(save.pet);
@@ -128,6 +241,8 @@ export class GameSession {
     // El estado dinámico (potenciales) solo si el genoma es de la misma topología
     if (save.brain.network && save.brain.configVersion === BRAIN_CONFIG_VERSION) s.sim.network.importState(save.brain.network);
     s.sim.actionSystem.importState(save.brain.actions);
+    s.attachPlasticity(save.learning); // tras reconstruir la red: pesos iniciales/actuales y estado
+    s.applyStage();
     return { session: s, weights };
   }
 
@@ -137,19 +252,27 @@ export class GameSession {
       savedAt: this.now(),
       lastActiveAt,
       profile: { ...this.profile },
-      growth: { ...this.growth },
+      growth: this.growth.exportState(),
       inventory: { owned: [...this.inventory.owned] },
       pet: this.world.pet.exportState(),
       world: this.world.exportState(),
       brain: {
         configVersion: BRAIN_CONFIG_VERSION,
         weights: exportWeights(this.sim.brainConfig),
+        initialWeights: exportWeights(this.initialBrain),
         network: this.sim.network.exportState(),
         actions: this.sim.actionSystem.exportState(),
       },
       memory: this.memory.exportState(),
       settings: { ...settings },
+      learning: { ...this.plasticity.exportState(), baselines: this.baseline.export() },
     };
+  }
+
+  // Copia independiente (mismo cerebro, misma memoria) para experimentos y evaluación
+  static clone(source: GameSession, opts: SessionOptions = {}): GameSession {
+    const save = JSON.parse(JSON.stringify(source.toSave(DEFAULT_SETTINGS, source.now()))) as SaveGame;
+    return GameSession.fromSave(save, opts).session;
   }
 
   get world(): World {
@@ -166,6 +289,9 @@ export class GameSession {
 
   // ---------- Tick ----------
   tick(opts: StepOptions = {}): StepResult {
+    // El tiempo es CONTEXTO: el mundo recibe la hora y la mascota la percibe (nunca la obedece)
+    if (this.timeOverride === null) this.clock.onTick?.();
+    this.world.setClock(this.now());
     const r = this.sim.step(opts);
     this.afterStep(r);
     return r;
@@ -175,24 +301,230 @@ export class GameSession {
     const stats = this.memory.stats;
     if (r.offline) stats.offlineTicks++;
     else stats.onlineTicks++;
-    if (!this.world.lightOn) {
+    if (this.world.lightLevel < 0.3) {
       stats.darkTicks++;
       if (ExperienceRecorder.isActiveInDark(r.active)) stats.darkActiveTicks++;
     }
 
     const now = this.now();
-    const { onsets, experiences } = this.recorder.observe(r, this.world, { now, day: this.day(now) });
-    for (const a of onsets) this.memory.countActionOnset(a);
+    const { onsets, experiences, episodes } = this.recorder.observe(r, this.world, { now, day: this.day(now) });
+    for (const e of episodes) this.onEpisode(e, now);
+    this.trackReturn(r, onsets, now);
+    for (const a of onsets) {
+      this.memory.countActionOnset(a);
+      if (REWARDABLE.has(a)) this.lastRewardable = { action: a, tick: r.tick };
+      if (EXPLAINED_ACTIONS.has(a) && !r.offline) this.recordDecision(a, r, now);
+    }
     for (const e of experiences) this.ingest(e);
 
     if (this.activeGame) this.activeGame.game.observe(r, this.activeGame.ctx);
     if (experiences.length || r.tick % DISCOVERY_EVERY === 0) this.evaluateDiscoveries();
+    const day = clockInfo(now).day;
+    if (day !== this.lastHabitDay && !r.offline) { this.lastHabitDay = day; this.onNewDay(now, day); }
+    if (r.tick % GROWTH_CONFIG.evaluateEveryTicks === 0 || this.growth.state.pending) this.checkGrowth(r, now);
     this.events.emit('tick', r);
   }
 
+  // ---------- Crecimiento (v6) ----------
+  private onEpisode(e: EpisodeRecord, now: number): void {
+    e.lifeStage = this.growth.stage;
+    this.memory.addEpisode(e);
+    if (e.offline) return;
+    const petDay = this.day(now);
+    if (e.kind === 'explore') {
+      this.growth.addDevelopment(`explore:${e.area}`, GROWTH_CONFIG.explorePoints, now);
+      this.growth.addMilestone('FIRST_EXPLORE', e.start, this.day(e.start), e.area);
+    }
+    if (e.kind === 'sleep' && !this.world.player.present) this.growth.addMilestone('FIRST_SLEEP_ALONE', e.start, petDay);
+  }
+
+  private onDiscovery(d: Discovery): void {
+    const now = this.now(), petDay = this.day(now);
+    this.growth.addDevelopment(`discovery:${d.key}`, GROWTH_CONFIG.discoveryPoints, now);
+    this.growth.addMilestone('FIRST_DISCOVERY', now, petDay, d.key);
+    if (d.key.startsWith('learned:')) this.growth.addMilestone('FIRST_LEARNED_ASSOCIATION', now, petDay, d.key);
+    if (d.key.startsWith('habit:')) this.growth.addMilestone('FIRST_HABIT', now, petDay, d.key);
+  }
+
+  // Momento seguro para crecer: no en medio de dormir, jugar, comer, un susto o un minijuego
+  private isSafeForGrowth(): boolean {
+    if (this.world.pet.asleep || this.activeGame) return false;
+    return !this.sim.last.active.some((a) => UNSAFE_FOR_GROWTH.has(a));
+  }
+
+  growthEligibility(now = this.now()): Eligibility {
+    return this.growth.eligibility(now);
+  }
+
+  private checkGrowth(r: StepResult, now: number): void {
+    const pending = !!this.growth.state.pending;
+    if (!pending && !this.growth.eligibility(now).eligible) return;
+    // Offline nunca crece solo: queda pendiente para vivirlo al volver
+    if (r.offline || !this.isSafeForGrowth()) { this.growth.markPending(now); return; }
+    this.transition(now);
+  }
+
+  identity(): IdentitySnapshot {
+    return {
+      weightsHash: weightsHash(exportWeights(this.sim.brainConfig)), experiences: this.memory.experiences.length,
+      moments: this.memory.moments.length, episodes: this.memory.episodes.length, discoveries: this.memory.discoveries.length,
+    };
+  }
+
+  /*
+   * LifeStageTransition (transaccional):
+   *   instantánea → un paso de etapa → moduladores/capacidades → hito + recuerdo → evento.
+   * Si algo falla, se restaura el estado de crecimiento anterior (nunca queda a medias).
+   * El cerebro NO se toca: se comprueba con el hash de pesos antes/después.
+   */
+  transition(now = this.now()): GrowthEvent | null {
+    const prev = this.growth.exportState();
+    const before = this.identity();
+    const petDay = this.day(now);
+    try {
+      const step = this.growth.advance(now, petDay);
+      if (!step) return null;
+      this.applyStage();
+      const label = stageLabel(step.to, this.profile.species);
+      const name = this.profile.name;
+      const recap = recapMoments(this.memory.moments, 3, step.from);
+      // Primer crecimiento: lo que cambió durante la infancia; después, etapa anterior vs la que termina
+      const prevStage = this.growth.state.history.length >= 3 ? this.growth.state.history[this.growth.state.history.length - 3].stage : null;
+      const comparisons = prevStage
+        ? compareSummaries(this.growth.state.subjects[prevStage], this.growth.state.subjects[step.from])
+        : compareWithinStage(this.memory.experiences, step.from);
+      const moment = makeMoment({
+        now, day: petDay, kind: 'milestone', title: `${name} está creciendo`,
+        story: `Ahora es ${label.toLowerCase()}. Parece que fue ayer cuando ${name} llegó a casa.`,
+        tags: ['#Crecimiento'], icon: 'sparkle', keyMoment: true,
+      });
+      moment.lifeStage = step.to;
+      this.memory.addMoment(moment);
+      this.growth.addMilestone('GREW', now, petDay, step.to, moment.id);
+      const after = this.identity();
+      const ev: GrowthEvent = {
+        ...step, at: now, petDay, before, after, brainPreserved: before.weightsHash === after.weightsHash, recap, comparisons, momentId: moment.id,
+      };
+      this.lastGrowth = ev;
+      this.events.emit('moment', moment);
+      this.events.emit('growth', ev);
+      return ev;
+    } catch (e) {
+      this.growth.state = prev;
+      this.applyStage();
+      throw e;
+    }
+  }
+
+  // ---- Herramientas de desarrollo (nunca desde la UI de producción) ----
+  devSetDevelopmentProgress(p: number): void {
+    const need = stageConfig(this.growth.stage).developmentPoints;
+    if (Number.isFinite(need)) this.growth.state.development.points = Math.max(0, Math.min(1, p)) * need;
+  }
+
+  devAddDevelopment(points: number): void {
+    const d = this.growth.state.development, need = stageConfig(this.growth.stage).developmentPoints;
+    if (Number.isFinite(need)) d.points = Math.min(need, d.points + Math.max(0, points));
+  }
+
+  // Desarrollo por N experiencias variadas SIN pasar por el cerebro (no se inventan recuerdos ni pesos)
+  devSimulateExperiences(n: number): number {
+    const kinds = Object.keys(GROWTH_CONFIG.experiencePoints) as ExperienceKind[];
+    const subjects = ['ball', 'teddy', 'duck', 'rope', 'player', null];
+    let gained = 0;
+    for (let i = 0; i < n; i++) {
+      const at = this.now() + i * 60_000; // repartidas en el tiempo (el tope diario sigue aplicando)
+      gained += this.growth.noteExperience(kinds[i % kinds.length], subjects[i % subjects.length], 1, at, false);
+    }
+    return gained;
+  }
+
+  devSatisfyAge(): void {
+    const min = this.growth.minDurationMs();
+    if (Number.isFinite(min)) this.growth.state.stageStartedAt = Math.min(this.growth.state.stageStartedAt, this.now() - min);
+  }
+
+  // Cuando vuelves: ¿salió a recibirte? (evidencia para el hábito, no una orden)
+  private trackReturn(r: StepResult, onsets: readonly Action[], now: number): void {
+    if (r.events.some((e) => e.type === 'PLAYER_ENTERED')) {
+      const info = clockInfo(now);
+      this.pendingReturn = {
+        tick: r.tick, start: now, minuteOfDay: Math.round(info.minuteOfDay), day: info.day, area: roomArea(this.world.pet),
+        light: this.world.lightLevel, activity: this.world.recentActivity, offline: r.offline,
+        d0: this.world.distance(this.world.pet, this.world.player),
+      };
+    }
+    const p = this.pendingReturn;
+    if (!p) return;
+    // Salir a recibir = empezar a acercarse/saludar, o llegar hasta ti si estaba lejos
+    // (mirar hacia la puerta o estar ya al lado no cuenta)
+    const greeted = onsets.some((a) => GREETING.has(a)) || (p.d0 >= RETURN_FAR && this.world.distance(this.world.pet, this.world.player) < 0.2);
+    const elapsed = r.tick - p.tick;
+    if (greeted || elapsed >= RETURN_WINDOW) {
+      const rec: EpisodeRecord = {
+        kind: 'return', start: p.start, end: now, minuteOfDay: p.minuteOfDay, day: p.day, area: p.area, light: p.light,
+        activityBefore: p.activity, subject: 'player', responded: greeted, latencyTicks: elapsed, offline: p.offline,
+      };
+      this.memory.addEpisode(rec);
+      this.pendingReturn = null;
+    }
+  }
+
+  // Una vez por día del mundo: instantánea de hábitos (para la evolución) y descubrimientos de rutina
+  private onNewDay(now: number, day: number): void {
+    const habits = this.habits(now);
+    this.memory.addHabitSnapshot({ day, petDay: this.day(now), habits: snapshotEntries(habits) });
+    for (const d of routineDiscoveries(habits, this.profile.name)) {
+      if (this.memory.hasDiscovery(d.key)) continue;
+      const disc: Discovery = { ...d, id: makeId('dis', this.config.rng), at: now, day: this.day(now), evidence: habits[0]?.evidenceCount ?? 0, subject: null };
+      this.memory.addDiscovery(disc);
+      this.onDiscovery(disc);
+      this.events.emit('discovery', disc);
+      this.addMoment(composeDiscovery(disc));
+    }
+  }
+
+  // ---------- Hábitos y rutinas (INTERPRETACIÓN del comportamiento; la SNN no los consulta) ----------
+  habits(now = this.now()): Habit[] {
+    return detectHabits(this.memory.episodes, now);
+  }
+
+  routines(now = this.now()): RoutineCard[] {
+    return interpretRoutines(this.habits(now), this.profile.name);
+  }
+
+  // Simulación offline: cada tick pasado ocurre a su hora (la noche pasa de verdad)
+  // Evaluación / herramientas: olvida los episodios de rutina (no toca el cerebro)
+  clearRoutineEvidence(): void {
+    this.memory.clearRoutine();
+    this.lastHabitDay = null;
+  }
+
+  setPhysiology(profile: PhysiologyProfile): void {
+    this.physiology = profile;
+    this.applyStage();
+  }
+
+  setTimeOverride(ms: number | null): void {
+    this.timeOverride = ms;
+  }
+
   private ingest(exp: Experience): void {
+    exp.lifeStage ??= this.growth.stage;
     const { first } = this.memory.addExperience(exp);
-    if (exp.valence > 0) this.growth.xp += exp.valence * exp.intensity * 10;
+    // EXPERIENCE → REWARD → PLASTICITY (el aprendizaje se ejecuta antes que cualquier efecto de UI)
+    // v5: las recompensas naturales pasan SIEMPRE por el error de predicción, también con resultado 0:
+    // dormir descansado no resuelve nada → peor que lo habitual → la asociación se debilita
+    const signal = this.baseline.advantage(exp.kind, exp.reward);
+    if (signal) {
+      const ev = this.plasticity.applyReward(signal, { source: exp.kind, subject: exp.subject, at: exp.at, tick: exp.tick, natural: NATURAL_KINDS.has(exp.kind) });
+      if (ev) this.events.emit('learning', ev);
+    }
+    this.growth.noteExperience(exp.kind, exp.subject, exp.reward, exp.at, exp.offline, exp.valence, exp.intensity);
+    if (!exp.offline) {
+      if (exp.kind === 'played') this.growth.addMilestone('FIRST_PLAY', exp.at, exp.day, exp.subject);
+      if (exp.kind === 'fetch_returned') this.growth.addMilestone('FIRST_FETCH', exp.at, exp.day, exp.subject);
+    }
     this.events.emit('experience', exp);
     if (first) {
       const m = composeFirstTime(exp, this.profile.name, this.world.pet.snapshot());
@@ -201,14 +533,17 @@ export class GameSession {
   }
 
   private addMoment(m: Moment): void {
+    m.lifeStage ??= this.growth.stage;
     this.memory.addMoment(m);
+    if (m.keyMoment || m.kind === 'first_time') this.growth.addDevelopment(`moment:${m.title}`, GROWTH_CONFIG.momentPoints, m.createdAt);
     this.events.emit('moment', m);
   }
 
   private evaluateDiscoveries(): void {
     const now = this.now();
-    for (const d of evaluateDiscoveries(this.memory, this.sim.brainConfig, this.profile.name, now, this.day(now))) {
+    for (const d of evaluateDiscoveries(this.memory, this.sim.brainConfig, this.profile.name, now, this.day(now), this.plasticity)) {
       this.memory.addDiscovery(d);
+      this.onDiscovery(d);
       this.events.emit('discovery', d);
       this.addMoment(composeDiscovery(d));
     }
@@ -220,6 +555,7 @@ export class GameSession {
     const exp: Experience = {
       id: makeId('exp', this.config.rng), at: now, day: this.day(now), tick: this.sim.network.tickCount, kind, subject,
       valence: Math.max(-1, Math.min(1, valence)), intensity: Math.max(0, Math.min(1, intensity)), gameId, offline: false,
+      reward: rewardFor(kind), actions: [...this.sim.last.active], context: buildContext(this.world, now),
     };
     this.ingest(exp);
     return exp;
@@ -289,6 +625,7 @@ export class GameSession {
       },
       unlock: (k) => this.unlock(k),
       ownedItems: () => [...this.inventory.owned],
+      setEvaluation: (on) => this.setEvaluation(on),
     };
     game.start(ctx);
     this.activeGame = { id, game, ctx };
@@ -312,6 +649,7 @@ export class GameSession {
     if (!g) return null;
     this.activeGame = null;
     const summary = g.game.end(g.ctx);
+    this.setEvaluation(false);
     this.evaluateDiscoveries();
     this.events.emit('gameEnded', summary);
     return summary;
@@ -343,12 +681,102 @@ export class GameSession {
   // ---------- Lectura para la UI ----------
   snapshot(): PetSnapshot {
     const pet = this.world.pet, stats = pet.snapshot(), last = this.sim.last;
-    const { level, progress } = levelFromXp(this.growth.xp);
     return {
-      name: this.profile.name, species: this.profile.species, level, levelProgress: progress, day: this.day(), stats,
+      name: this.profile.name, species: this.profile.species, day: this.day(), stats,
+      lifeStage: this.growth.stage, stageLabel: stageLabel(this.growth.stage, this.profile.species),
+      growthVisual: this.growth.visualValue(this.now()), sizeModifier: this.growth.state.modifiers.size, growthPending: !!this.growth.state.pending,
       mood: moodLabel(stats), moodEmoji: moodEmoji(stats), thought: thoughtFor(last.active, this.world, this.profile.name),
       behavior: behaviorLabel(last.active), active: [...last.active], asleep: pet.asleep, lightOn: this.world.lightOn,
       tick: this.sim.network.tickCount, playerPresent: this.world.player.present,
+      rewardable: this.rewardable(), learnedExperiences: this.plasticity.experiencesApplied,
+      ...this.contextSnapshot(),
+    };
+  }
+
+  // ---------- Aprendizaje ----------
+  // ¿Hay una acción reciente que el jugador pueda recompensar? (contextual, no permanente)
+  rewardable(): Action | null {
+    const t = this.sim.network.tickCount, lr = this.lastRewardable;
+    if (!lr || !this.world.player.present) return null;
+    if (t - lr.tick > REWARD_WINDOW || t - this.lastPlayerRewardTick < REWARD_COOLDOWN) return null;
+    return lr.action;
+  }
+
+  // ❤️ Recompensar: primero el evento de aprendizaje, después la caricia (alegría)
+  rewardPlayer(): LearningEvent | null {
+    if (!this.rewardable()) return null;
+    const w = this.world;
+    const subject = (w.getObject(w.pet.carrying) ?? w.getObject(w.focusObjectId))?.kind ?? 'player';
+    const before = this.plasticity.log[0];
+    this.recordExperience('player_rewarded', subject, 0.8, 0.8, this.activeGameId);
+    this.lastPlayerRewardTick = this.sim.network.tickCount;
+    this.lastRewardable = null;
+    w.petDirect();
+    const ev = this.plasticity.log[0];
+    return ev && ev !== before ? ev : null;
+  }
+
+  // Herramienta de desarrollo: recompensa sin experiencia asociada
+  injectReward(reward: number): LearningEvent | null {
+    const ev = this.plasticity.applyReward(reward, { source: 'inject', subject: null, at: this.now(), tick: this.sim.network.tickCount, natural: true });
+    if (ev) this.events.emit('learning', ev);
+    return ev;
+  }
+
+  // Modo evaluación: las experiencias se registran pero los pesos no cambian
+  setEvaluation(on: boolean): void {
+    this.plasticity.frozen = on;
+  }
+
+  resetLearnedWeights(): void {
+    this.plasticity.resetLearned();
+    this.events.emit('changed', undefined);
+  }
+
+  private recordDecision(action: Action, r: StepResult, now: number): void {
+    const w = this.world;
+    const subject = (w.getObject(w.pet.carrying) ?? w.getObject(r.focusObjectId))?.kind ?? null;
+    const d = buildDecisionTrace(this.sim.brain, this.sim.trace, action, r.perception, subject, now);
+    if (!d) return;
+    this.decisions.unshift(d);
+    if (this.decisions.length > MAX_DECISIONS) this.decisions.length = MAX_DECISIONS;
+  }
+
+  // ---------- Exportar / importar cerebro ----------
+  exportBrain(includeMemory = true): BrainBundle {
+    return {
+      format: 'milo-brain', version: 1, exportedAt: this.now(),
+      pet: { name: this.profile.name, species: this.profile.species, preset: this.profile.preset },
+      brain: { configVersion: BRAIN_CONFIG_VERSION, weights: exportWeights(this.sim.brainConfig), initialWeights: exportWeights(this.initialBrain) },
+      learning: { ...this.plasticity.exportState(), baselines: this.baseline.export() },
+      memory: includeMemory ? this.memory.exportState() : undefined,
+      personality: this.traits().filter((t) => t.revealed).map((t) => t.label),
+      preferences: this.memory.preferences().map((p) => ({ subject: p.subject, score: p.score, positive: p.positive })),
+    };
+  }
+
+  // Aplica un cerebro exportado a esta mascota (solo cerebro: la memoria no se toca)
+  importBrain(bundle: unknown): WeightImportReport {
+    const b = bundle as Partial<BrainBundle> | null;
+    if (!b || b.format !== 'milo-brain' || !b.brain) throw new Error('No es un cerebro exportado de Milo');
+    const current = createBrainConfig(this.profile.preset);
+    const report = importWeights(current, b.brain.weights);
+    const initial = createBrainConfig(this.profile.preset);
+    importWeights(initial, b.brain.initialWeights ?? b.brain.weights);
+    this.sim.brainConfig.sensorToCircuit = current.sensorToCircuit;
+    this.sim.brainConfig.circuitToAction = current.circuitToAction;
+    this.sim.syncWeights();
+    this.initialBrain = initial;
+    this.attachPlasticity(b.learning ?? null);
+    this.events.emit('changed', undefined);
+    return report;
+  }
+
+  private contextSnapshot() {
+    const info = clockInfo(this.now()), w = this.world;
+    return {
+      minuteOfDay: Math.round(info.minuteOfDay), timeOfDay: info.timeOfDay, lightLevel: w.lightLevel, lampOn: w.lightOn,
+      area: roomArea(w.pet), recentActivity: w.recentActivity,
     };
   }
 

@@ -34,7 +34,7 @@ describe('Serialización del save', () => {
     expect(b.sim.network.tickCount).toBe(a.sim.network.tickCount);
     expect(b.memory.moments.length).toBe(a.memory.moments.length);
     expect(b.memory.stats.actionOnsets).toEqual(a.memory.stats.actionOnsets);
-    expect(b.growth).toEqual(a.growth);
+    expect(b.growth.state).toEqual(a.growth.state); // blockedCounts es diagnóstico (no se guarda)
   });
 
   it('saveVersion obligatorio y versiones futuras rechazadas', () => {

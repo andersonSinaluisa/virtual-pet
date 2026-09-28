@@ -26,16 +26,21 @@ export const SENSOR_KEYS = [
   'playerNear', 'playerTouching', 'playerMoving', 'foodAvailable', 'waterAvailable', 'bedAvailable',
   'toyAvailable', 'interestingObjectVisible', 'hidingPlaceAvailable', 'darkness', 'loudSound',
   'newObjectDetected', 'playerCalling',
+  'seesBall', 'seesTeddy', 'seesRope', 'seesDuck',
+  // v5: contexto (ver docs/emergent-routines.md)
+  'time00', 'time04', 'time08', 'time12', 'time16', 'time20',
+  'lightLevel', 'zoneBed', 'zoneFood', 'zonePlay', 'zoneWindow', 'playerReturned', 'recentActivity',
 ] as const;
 export type SensorKey = (typeof SENSOR_KEYS)[number];
 
 export const CIRCUIT_KEYS = [
   'feedingCircuit', 'drinkingCircuit', 'restCircuit', 'activityCircuit', 'playCircuit', 'socialCircuit',
   'lonelinessCircuit', 'followCircuit', 'joyCircuit', 'distressCircuit', 'curiosityCircuit', 'fearCircuit',
+  'ballAttention', 'teddyAttention', 'ropeAttention', 'duckAttention',
 ] as const;
 export type CircuitKey = (typeof CIRCUIT_KEYS)[number];
 
-export type SensorGroup = 'interno' | 'entorno';
+export type SensorGroup = 'interno' | 'entorno' | 'contexto';
 
 export interface SensorDef {
   key: SensorKey;
@@ -58,6 +63,35 @@ export interface BrainWeightsData {
   circuitToAction: CircuitToAction;
 }
 
+/*
+ * PLASTICIDAD (v4). Solo las sinapsis que cumplen alguna regla son
+ * plásticas. Límites absolutos (min/max) o relativos al peso inicial (span).
+ */
+/*
+ * Canal de modulación: qué recompensas pueden cambiar la vía.
+ *   'natural' → solo resultados homeostáticos (comer con hambre, descansar...)
+ *   'all'     → también las del jugador y los eventos del juego
+ * Sin canales, cada ❤️ reforzaba cualquier vía tónica activa (medido).
+ */
+export type ModulationChannel = 'natural' | 'all';
+
+type RuleBase = { min?: number; max?: number; span?: number; rate?: number; channel?: ModulationChannel };
+export type PlasticityRule =
+  | (RuleBase & { layer: 'sensorToCircuit'; from: readonly SensorKey[]; to: readonly CircuitKey[] | '*' })
+  | (RuleBase & { layer: 'circuitToAction'; from: readonly CircuitKey[]; to: readonly Action[] | '*' });
+
+export interface PlasticityConfig {
+  enabled: boolean;
+  learningRate: number;
+  eligibilityDecay: number; // por tick
+  eligibilityIncrement: number; // por coincidencia pre(t−1) → post(t)
+  maxDeltaPerSynapse: number; // por experiencia
+  maxWeightChangePerExperience: number; // Σ|Δw| por experiencia
+  eligibilityConsumption: number; // fracción de la traza que queda tras una recompensa
+  incomingBudgetFactor: number; // homeostasis: Σw+ entrante ≤ inicial × factor
+  rules: PlasticityRule[];
+}
+
 export interface BrainConfig extends BrainWeightsData {
   version: number;
   neuron: { threshold: number; leak: number };
@@ -65,9 +99,30 @@ export interface BrainConfig extends BrainWeightsData {
   circuits: CircuitDef[];
   conflicts: [Action, Action][];
   lateralInhibition: { enabled: boolean; weight: number };
+  plasticity: PlasticityConfig;
 }
 
-export const BRAIN_CONFIG_VERSION = 3;
+export const BRAIN_CONFIG_VERSION = 5;
+
+// v5: neuronas de reloj (código de población en anillo) en el orden de CLOCK_PHASES_HOURS
+export const CLOCK_SENSORS = ['time00', 'time04', 'time08', 'time12', 'time16', 'time20'] as const satisfies readonly SensorKey[];
+export const ZONE_SENSORS = ['zoneBed', 'zoneFood', 'zonePlay', 'zoneWindow'] as const satisfies readonly SensorKey[];
+const CONTEXT_SENSORS: readonly SensorKey[] = [...CLOCK_SENSORS, 'lightLevel', 'darkness', ...ZONE_SENSORS, 'recentActivity'];
+
+/*
+ * CANALES DE OBJETO (v4): cada objeto identificable tiene un sensor propio y
+ * una neurona de atención. La actividad reciente de la neurona de atención
+ * sesga qué objeto se convierte en foco (orientación dirigida por la red).
+ */
+export const OBJECT_CHANNELS = [
+  { kind: 'ball', sensor: 'seesBall', attention: 'ballAttention' },
+  { kind: 'teddy', sensor: 'seesTeddy', attention: 'teddyAttention' },
+  { kind: 'rope', sensor: 'seesRope', attention: 'ropeAttention' },
+  { kind: 'duck', sensor: 'seesDuck', attention: 'duckAttention' },
+] as const satisfies readonly { kind: string; sensor: SensorKey; attention: CircuitKey }[];
+
+const OBJECT_SENSORS = OBJECT_CHANNELS.map((c) => c.sensor);
+const ATTENTION_CIRCUITS = OBJECT_CHANNELS.map((c) => c.attention);
 
 const BASE_BRAIN_CONFIG: BrainConfig = {
   version: BRAIN_CONFIG_VERSION,
@@ -97,6 +152,25 @@ const BASE_BRAIN_CONFIG: BrainConfig = {
     { key: 'loudSound', label: 'ruido fuerte', group: 'entorno', gain: 0.7, event: true },
     { key: 'newObjectDetected', label: 'objeto nuevo', group: 'entorno', gain: 0.6, event: true },
     { key: 'playerCalling', label: 'te llama', group: 'entorno', gain: 0.6, event: true },
+    // v4: estímulos identificables (qué objeto concreto ve)
+    { key: 'seesBall', label: 've la pelota', group: 'entorno', gain: 0.35 },
+    { key: 'seesTeddy', label: 've el peluche', group: 'entorno', gain: 0.35 },
+    { key: 'seesRope', label: 've la cuerda', group: 'entorno', gain: 0.35 },
+    { key: 'seesDuck', label: 've el patito', group: 'entorno', gain: 0.35 },
+    // v5: contexto. El reloj es INFORMACIÓN, no una orden (6 neuronas en anillo, 00/04/08/12/16/20 h)
+    { key: 'time00', label: 'hora ~00 h', group: 'contexto', gain: 0.35 },
+    { key: 'time04', label: 'hora ~04 h', group: 'contexto', gain: 0.35 },
+    { key: 'time08', label: 'hora ~08 h', group: 'contexto', gain: 0.35 },
+    { key: 'time12', label: 'hora ~12 h', group: 'contexto', gain: 0.35 },
+    { key: 'time16', label: 'hora ~16 h', group: 'contexto', gain: 0.35 },
+    { key: 'time20', label: 'hora ~20 h', group: 'contexto', gain: 0.35 },
+    { key: 'lightLevel', label: 'luz', group: 'contexto', gain: 0.3 },
+    { key: 'zoneBed', label: 'zona de la cama', group: 'contexto', gain: 0.3 },
+    { key: 'zoneFood', label: 'zona de comida', group: 'contexto', gain: 0.3 },
+    { key: 'zonePlay', label: 'zona de juego', group: 'contexto', gain: 0.3 },
+    { key: 'zoneWindow', label: 'zona de la ventana', group: 'contexto', gain: 0.3 },
+    { key: 'playerReturned', label: 'acabas de volver', group: 'contexto', gain: 0.5, event: true },
+    { key: 'recentActivity', label: 'actividad reciente', group: 'contexto', gain: 0.3 },
   ],
 
   // ---- CAPA 2: circuitos internos (una neurona LIF cada uno) ----
@@ -113,6 +187,11 @@ const BASE_BRAIN_CONFIG: BrainConfig = {
     { key: 'distressCircuit', label: 'malestar' },
     { key: 'curiosityCircuit', label: 'curiosidad' },
     { key: 'fearCircuit', label: 'miedo' },
+    // v4: atención por objeto (todas nacen iguales: sin preferencias)
+    { key: 'ballAttention', label: 'atención a la pelota' },
+    { key: 'teddyAttention', label: 'atención al peluche' },
+    { key: 'ropeAttention', label: 'atención a la cuerda' },
+    { key: 'duckAttention', label: 'atención al patito' },
   ],
 
   // ---- CAPA 3: salidas = ACTION_LIST (una neurona por acción) ----
@@ -147,6 +226,25 @@ const BASE_BRAIN_CONFIG: BrainConfig = {
     newObjectDetected: { curiosityCircuit: 0.7, fearCircuit: 0.15 },
     // v3: una voz conocida llamando. Pesos moderados: no garantiza que venga.
     playerCalling: { socialCircuit: 0.45, followCircuit: 0.35, joyCircuit: 0.15, curiosityCircuit: 0.1, fearCircuit: -0.1 },
+    // v4: idénticos para todos los objetos → ninguna preferencia de nacimiento
+    seesBall: { ballAttention: 0.55, curiosityCircuit: 0.1, playCircuit: 0.1 },
+    seesTeddy: { teddyAttention: 0.55, curiosityCircuit: 0.1, playCircuit: 0.1 },
+    seesRope: { ropeAttention: 0.55, curiosityCircuit: 0.1, playCircuit: 0.1 },
+    seesDuck: { duckAttention: 0.55, curiosityCircuit: 0.1, playCircuit: 0.1 },
+    // v5: el reloj nace SIN preferencia horaria: las 6 fases pesan igual (0.05 a descanso y actividad)
+    time00: { restCircuit: 0.05, activityCircuit: 0.05 },
+    time04: { restCircuit: 0.05, activityCircuit: 0.05 },
+    time08: { restCircuit: 0.05, activityCircuit: 0.05 },
+    time12: { restCircuit: 0.05, activityCircuit: 0.05 },
+    time16: { restCircuit: 0.05, activityCircuit: 0.05 },
+    time20: { restCircuit: 0.05, activityCircuit: 0.05 },
+    lightLevel: { activityCircuit: 0.15, curiosityCircuit: 0.05 },
+    zoneBed: { restCircuit: 0.1 },
+    zoneFood: { feedingCircuit: 0.1, drinkingCircuit: 0.05 },
+    zonePlay: { playCircuit: 0.1 },
+    zoneWindow: { curiosityCircuit: 0.1 },
+    playerReturned: { socialCircuit: 0.3, joyCircuit: 0.2, followCircuit: 0.1 },
+    recentActivity: { restCircuit: 0.1, activityCircuit: -0.1 },
   },
 
   /*
@@ -169,6 +267,10 @@ const BASE_BRAIN_CONFIG: BrainConfig = {
       APPROACH: -0.8, GREET: -0.5, SMILE: -0.5, DANCE: -0.6, PLAY: -0.6, EAT: -0.6,
       DRINK: -0.6, SLEEP: -0.5, INVESTIGATE: -0.5, PICK_UP_OBJECT: -0.4, FOLLOW_PLAYER: -0.5,
     },
+    ballAttention: { LOOK_AT_OBJECT: 0.35, INVESTIGATE: 0.25, PLAY: 0.2, PICK_UP_OBJECT: 0.2 },
+    teddyAttention: { LOOK_AT_OBJECT: 0.35, INVESTIGATE: 0.25, PLAY: 0.2, PICK_UP_OBJECT: 0.2 },
+    ropeAttention: { LOOK_AT_OBJECT: 0.35, INVESTIGATE: 0.25, PLAY: 0.2, PICK_UP_OBJECT: 0.2 },
+    duckAttention: { LOOK_AT_OBJECT: 0.35, INVESTIGATE: 0.25, PLAY: 0.2, PICK_UP_OBJECT: 0.2 },
   },
 
   /*
@@ -183,6 +285,39 @@ const BASE_BRAIN_CONFIG: BrainConfig = {
 
   // PREPARADO, APAGADO: inhibición lateral entre acciones en conflicto (dentro de la red).
   lateralInhibition: { enabled: false, weight: -0.6 },
+
+  // Ver docs/learning-system.md §3–§5
+  plasticity: {
+    enabled: true,
+    learningRate: 0.015,
+    eligibilityDecay: 0.93,
+    eligibilityIncrement: 0.5,
+    maxDeltaPerSynapse: 0.008,
+    maxWeightChangePerExperience: 0.12,
+    eligibilityConsumption: 0.5,
+    incomingBudgetFactor: 1.6,
+    rules: [
+      // Solo destinos plausibles: con '*' aparecían asociaciones espurias (ver docs/learning-results.md)
+      { layer: 'sensorToCircuit', from: OBJECT_SENSORS, to: ['curiosityCircuit', 'playCircuit', 'joyCircuit'], min: -0.2, max: 0.9 },
+      // La atención decide el FOCO por "el que más tira" (winner-take-all): pequeños cambios
+      // aquí cambian mucho la conducta, así que aprende 4 veces más despacio (medido)
+      { layer: 'sensorToCircuit', from: OBJECT_SENSORS, to: ATTENTION_CIRCUITS, min: -0.2, max: 0.9, rate: 0.25 },
+      { layer: 'circuitToAction', from: ATTENTION_CIRCUITS, to: ['LOOK_AT_OBJECT', 'INVESTIGATE', 'PLAY', 'PICK_UP_OBJECT'], min: 0, max: 0.8 },
+      { layer: 'sensorToCircuit', from: ['playerCalling'], to: ['socialCircuit', 'followCircuit', 'joyCircuit'], min: 0, max: 1.0 },
+      // Nota: social/seguimiento → APPROACH NO es plástica: si lo fuera, la mascota aprendería
+      // "acercarse siempre" en vez de la asociación con la llamada (medido: docs/learning-results.md)
+      { layer: 'sensorToCircuit', from: ['hunger', 'thirst', 'fatigue', 'boredom'], to: ['feedingCircuit', 'drinkingCircuit', 'restCircuit', 'playCircuit'], span: 0.2, rate: 0.5, channel: 'natural' },
+      // v5: contexto (hora, luz, lugar, actividad reciente) → circuitos de conducta, aprendido del RESULTADO
+      // (canal natural: solo consecuencias sobre necesidades; ver docs/routine-results.md para las variantes medidas)
+      { layer: 'sensorToCircuit', from: CONTEXT_SENSORS, to: ['restCircuit', 'activityCircuit', 'playCircuit', 'curiosityCircuit', 'feedingCircuit'], min: -0.3, max: 0.6, channel: 'natural' },
+      // v5: volver a casa → recibirte (lo refuerzan tus ❤️)
+      { layer: 'sensorToCircuit', from: ['playerReturned'], to: ['socialCircuit', 'joyCircuit', 'followCircuit'], min: 0, max: 0.9, rate: 3 },
+      {
+        layer: 'circuitToAction', from: ['feedingCircuit', 'drinkingCircuit', 'restCircuit', 'playCircuit', 'curiosityCircuit'],
+        to: ['EAT', 'DRINK', 'REST', 'SLEEP', 'PLAY', 'INVESTIGATE', 'LOOK_AT_OBJECT', 'PICK_UP_OBJECT'], span: 0.2, rate: 0.5, channel: 'natural',
+      },
+    ],
+  },
 };
 
 /*

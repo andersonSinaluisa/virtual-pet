@@ -22,6 +22,7 @@ import type { SpeciesKey } from '@/core/persistence/SaveGame';
 import type { Point } from '@/core/simulation/Pet';
 import type { World, WorldObject } from '@/core/simulation/World';
 
+import { GrowthVisualController } from './GrowthVisualController';
 import { Pet3D } from './Pet3D';
 import { PetController } from './PetController';
 import { PetMaterials } from './PetMaterials';
@@ -35,6 +36,8 @@ export const FLOOR_D = 3.8;
 export interface SceneSource {
   world: World;
   active(): readonly Action[];
+  // v6: crecimiento (valor visual continuo 0..3 y tamaño individual); sin él, joven
+  growth?(): { value: number; size: number };
 }
 
 export interface SceneOptions {
@@ -56,6 +59,10 @@ interface Entity {
 
 const ROOM = { bg: '#F3E7EC', wall: '#F6ECEF', floor: '#F7EDE6', rug: '#EEDBD6', window: '#FFF3E6', door: '#D9A27E' };
 const NIGHT = new THREE.Color('#2a2f5a');
+const DAY_SKY = new THREE.Color('#FFF3E6');
+const DUSK_SKY = new THREE.Color('#FFB27A');
+// Cuánto "atardecer" hay: máximo cuando la luz del día está a medias
+const dusk = (daylight: number) => Math.max(0, 1 - Math.abs(daylight - 0.5) * 2);
 
 export class PetScene {
   readonly scene = new THREE.Scene();
@@ -72,6 +79,7 @@ export class PetScene {
   private readonly soundRings: THREE.Mesh[];
   private readonly focusRing: THREE.Mesh;
   private readonly bgColor = new THREE.Color(ROOM.bg);
+  private readonly sky = new THREE.Color(DAY_SKY);
   private darkness = 0;
   private t = 0;
   private yaw = 0;
@@ -89,6 +97,8 @@ export class PetScene {
   private readonly v3 = new THREE.Vector3();
   private readonly vLook = new THREE.Vector3();
   private readonly ndc = new THREE.Vector2();
+
+  private growthVisual: GrowthVisualController | null = null;
 
   constructor(private readonly renderer: THREE.WebGLRenderer, private readonly source: SceneSource, opts: SceneOptions) {
     this.debug = !!opts.debug;
@@ -152,6 +162,9 @@ export class PetScene {
     if (this.pet) { this.pet.object3D.remove(this.petProxy); this.scene.remove(this.pet.object3D); this.pet.dispose(); }
     this.species = species;
     this.pet = new Pet3D({ species });
+    this.growthVisual = new GrowthVisualController(this.pet);
+    const g = this.source.growth?.();
+    this.growthVisual.update(0, g?.value ?? 2, g?.size ?? 1, true);
     this.pet.object3D.add(this.petProxy);
     this.pet.object3D.position.set(this.toX(p.x), 0, this.toZ(p.y));
     this.scene.add(this.pet.object3D);
@@ -243,6 +256,8 @@ export class PetScene {
 
     const touching = world.player.touchTicks > 0;
     this.controller.update({ active, pet, touching, lookTarget, renderSpeed });
+    const g = this.source.growth?.();
+    this.growthVisual?.update(dt, g?.value ?? 2, g?.size ?? 1);
     this.pet.update(dt, renderSpeed, this.camera);
 
     // Sonido
@@ -265,11 +280,13 @@ export class PetScene {
       this.focusRing.rotation.z = this.t;
     }
 
-    // Luz
-    this.darkness += ((world.lightOn ? 0 : 1) - this.darkness) * (1 - Math.exp(-dt * 3));
+    // Luz: ciclo día/noche + lámpara (world.lightLevel), interpolada por frame (sin saltos)
+    this.darkness += ((1 - world.lightLevel) - this.darkness) * (1 - Math.exp(-dt * 2));
+    this.sky.set(DAY_SKY).lerp(DUSK_SKY, dusk(world.daylight));
     setDarkness(this.scene, this.lights, this.darkness);
     this.bgColor.set(ROOM.bg).lerp(NIGHT, this.darkness * 0.85);
-    this.windowMat.color.set(ROOM.window).lerp(NIGHT, this.darkness);
+    // La ventana muestra el cielo real: día, atardecer anaranjado o noche (aunque la lámpara esté encendida)
+    this.windowMat.color.copy(this.sky).lerp(NIGHT, 1 - world.daylight);
 
     this.updateCamera(dt, active, root.position);
   }

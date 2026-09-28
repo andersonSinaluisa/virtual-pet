@@ -29,6 +29,8 @@ type Handler = (ctx: ActionContext) => string;
 // Lugar al que mira/va cuando no estás (la puerta, al fondo a la izquierda)
 const DOOR: Point = { x: 0.08, y: 0.06 };
 
+const SLEEP_RECOVERY = 0.0045; // fracción de la presión de sueño que se recupera por minuto dormido en la cama
+
 export class ActionSystem {
   hold: Partial<Record<Action, number>> = {}; // acción → ticks restantes
   status: Partial<Record<Action, string>> = {}; // acción → lo que está pasando físicamente
@@ -45,8 +47,15 @@ export class ActionSystem {
     this.carryTimer = 0;
   }
 
+  // v6 (crecimiento): ¿puede FÍSICAMENTE? La SNN ya decidió; si el cuerpo aún no puede,
+  // se ejecuta su forma posible (RUN → WALK) o nada. No hay consecuencia de lo que no ocurrió.
+  gate: ((action: Action) => Action | null) | null = null;
+
   trigger(actions: readonly FiredAction[]): void {
-    for (const { action } of actions) this.hold[action] = ACTION_INFO[action].hold;
+    for (const { action } of actions) {
+      const doable = this.gate ? this.gate(action) : action;
+      if (doable) this.hold[doable] = Math.max(this.hold[doable] ?? 0, ACTION_INFO[doable].hold);
+    }
   }
 
   get active(): Action[] {
@@ -62,7 +71,15 @@ export class ActionSystem {
     pet.asleep = false;
 
     const active = this.active;
-    for (const action of active) this.status[action] = this.handlers[action](ctx);
+    for (const action of active) {
+      const from = ctx.intents.length;
+      this.status[action] = this.handlers[action](ctx);
+      // prioridad de movimiento: la acción disparada más recientemente (más "hold" restante, relativo a su duración)
+      for (let i = from; i < ctx.intents.length; i++) {
+        const it = ctx.intents[i];
+        if (it.kind === 'seek' && it.priority === undefined) it.priority = (this.hold[action] ?? 0) / ACTION_INFO[action].hold;
+      }
+    }
     for (const action of active) this.hold[action] = (this.hold[action] ?? 0) - 1;
 
     // Soltar lo que lleva un rato después de dejar de "querer" recogerlo.
@@ -125,21 +142,34 @@ export class ActionSystem {
       },
       SLEEP: (ctx) => {
         const bed = ctx.world.firstOfType('bed');
-        const inBed = this.near(ctx.world, ctx.pet, bed, 0.08);
-        if (bed) ctx.intents.push(inBed ? { kind: 'brake', factor: 0 } : { kind: 'seek', target: bed, speed: 0.6, stop: 0.05 });
+        const inBed = this.near(ctx.world, ctx.pet, bed, 0.1);
+        const settled = this.near(ctx.world, ctx.pet, bed, 0.04);
+        // v5: se acomoda en el centro de la cama (antes se quedaba en el borde y "despertaba" a cada paso)
+        if (bed) ctx.intents.push(settled ? { kind: 'brake', factor: 0 } : { kind: 'seek', target: bed, speed: inBed ? 0.3 : 0.6, stop: 0.02 });
         ctx.pet.asleep = inBed;
-        ctx.pet.change('fatigue', inBed ? -0.02 : -0.006);
-        ctx.pet.change('energy', inBed ? 0.02 : 0.008);
+        // v5: el sueño recupera de forma gradual (antes −0.02: siestas de 50 ticks, ~6 % del tiempo dormido;
+        // con un día de 1440 ticks ese ciclo nunca podía sincronizarse con la noche). Dormido en la cama
+        // ~16 h despierto : 6–8 h dormido; fuera de la cama descansa peor.
+        // Presión de sueño con caída exponencial (modelo de dos procesos): al principio de la noche baja
+        // deprisa y al final despacio → el final del sueño es "ligero" y ahí el contexto (oscuridad,
+        // lo aprendido sobre la hora) inclina entre seguir durmiendo o despertar.
+        const f = ctx.pet.fatigue;
+        ctx.pet.change('fatigue', inBed ? -(SLEEP_RECOVERY * f + 0.0004) : -(SLEEP_RECOVERY * 0.5 * f + 0.0002));
+        ctx.pet.change('energy', inBed ? 0.006 : 0.003);
         return inBed ? 'duerme en la cama' : 'va a la cama';
       },
       REST: (ctx) => {
-        ctx.intents.push({ kind: 'brake', factor: cfg.movement.restMultiplier });
-        ctx.pet.change('fatigue', -0.003);
+        // v5: si a la vez quiere DORMIR, no frena: así puede llegar a la cama (antes se quedaba a medio camino)
+        if (!((this.hold.SLEEP ?? 0) > 0)) ctx.intents.push({ kind: 'brake', factor: cfg.movement.restMultiplier });
+        // v5: tumbarse despierto repone energía pero apenas quita el sueño (antes −0.003: sustituía a dormir)
+        ctx.pet.change('fatigue', -0.0012);
         ctx.pet.change('energy', 0.012);
         return 'descansa';
       },
       PLAY: (ctx) => {
-        const toy = ctx.world.getObject(ctx.pet.carrying) ?? ctx.world.nearest(ctx.world.toys());
+        // Juega con lo que lleva; si no, con el objeto al que atiende (si es un juguete que se puede coger); si no, el más cercano
+        const focusToy = ctx.focus && ctx.focus.pickable ? ctx.focus : null;
+        const toy = ctx.world.getObject(ctx.pet.carrying) ?? focusToy ?? ctx.world.nearest(ctx.world.toys());
         if (!toy) { ctx.pet.change('boredom', -0.01); return 'juega sola'; }
         if (toy.id !== ctx.pet.carrying) ctx.intents.push({ kind: 'seek', target: toy, speed: 0.9, stop: 0.07 });
         if (!this.near(ctx.world, ctx.pet, toy, 0.1)) return 'va al juguete';

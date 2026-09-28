@@ -68,6 +68,7 @@ export class ChoiceGame implements MiniGame<ChoiceView> {
         this.placed.set(obj.id, o.kind);
       });
       this.phase = 'observing';
+      ctx.setEvaluation(true); // medir sin que la propia prueba cambie los pesos
     }
   }
 
@@ -101,6 +102,7 @@ export class ChoiceGame implements MiniGame<ChoiceView> {
     const clear = first && first.score >= MIN_SCORE && (!second || first.score >= second.score * MARGIN);
     this.chosen = clear ? first.kind : null;
     this.phase = 'result';
+    ctx.setEvaluation(false);
     if (this.chosen) ctx.record('choice_made', this.chosen, 0.6, 0.7);
   }
 

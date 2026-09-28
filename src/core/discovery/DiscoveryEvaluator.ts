@@ -6,8 +6,11 @@
  * Un descubrimiento NO se dispara con una sola interacción (salvo eventos
  * únicos declarados como tales). Ejemplo: varias interacciones positivas con
  * la pelota → "Parece que Milo disfruta mucho la pelota."
+ *
+ * v2: además del historial, se exige evidencia en el CEREBRO: para los objetos
+ * con estímulo propio, la vía aprendida de ese objeto debe haber crecido.
  */
-import type { BrainConfig } from '../brain/BrainConfig';
+import { OBJECT_CHANNELS, type BrainConfig, type CircuitKey, type SensorKey } from '../brain/BrainConfig';
 import type { PetMemory } from '../memory/PetMemory';
 import { subjectLabel, subjectName } from '../memory/subjects';
 import type { Discovery, ExperienceKind, SubjectKey } from '../memory/types';
@@ -18,7 +21,16 @@ export const DISCOVERY_RULES = {
   likeMinScore: 0.25,
   dislikeMinNegative: 3,
   dislikeMaxScore: -0.2,
+  likeMinPathwayDelta: 0.03, // Σ cambio aprendido en las vías del sensor del objeto
+  callMinPathwayDelta: 0.04,
+  callMinResponses: 3,
 } as const;
+
+// Lo que el evaluador necesita saber del aprendizaje (sin depender de la implementación)
+export interface LearningEvidence {
+  pathwayDelta(from: SensorKey | CircuitKey): number;
+  synapseDelta?(key: string): number;
+}
 
 // Eventos únicos: basta con que ocurran una vez
 const UNIQUE: Partial<Record<ExperienceKind, { key: string; title: (n: string) => string; text: (n: string, s: SubjectKey | null) => string; icon: string }>> = {
@@ -38,7 +50,7 @@ function discoveryId(now: number): string {
   return `dis_${now.toString(36)}_${counter.toString(36)}`;
 }
 
-export function evaluateDiscoveries(memory: PetMemory, config: BrainConfig, petName: string, now: number, day: number): Discovery[] {
+export function evaluateDiscoveries(memory: PetMemory, config: BrainConfig, petName: string, now: number, day: number, learning?: LearningEvidence): Discovery[] {
   const found: Discovery[] = [];
   const push = (d: Omit<Discovery, 'id' | 'at' | 'day'>) => {
     if (memory.hasDiscovery(d.key) || found.some((f) => f.key === d.key)) return;
@@ -48,7 +60,9 @@ export function evaluateDiscoveries(memory: PetMemory, config: BrainConfig, petN
   // Gustos y disgustos (evidencia repetida)
   for (const p of memory.preferences()) {
     if (p.subject === 'player') continue;
-    if (p.positive >= DISCOVERY_RULES.likeMinPositive && p.score >= DISCOVERY_RULES.likeMinScore) {
+    const channel = OBJECT_CHANNELS.find((c) => c.kind === p.subject);
+    const brainAgrees = !channel || !learning || learning.pathwayDelta(channel.sensor) >= DISCOVERY_RULES.likeMinPathwayDelta;
+    if (p.positive >= DISCOVERY_RULES.likeMinPositive && p.score >= DISCOVERY_RULES.likeMinScore && brainAgrees) {
       push({
         key: `likes:${p.subject}`, title: `¡Le fascina ${subjectLabel(p.subject)}!`,
         text: `Parece que ${petName} disfruta mucho ${subjectLabel(p.subject)}.`, icon: 'heart', evidence: p.positive, subject: p.subject,
@@ -72,6 +86,12 @@ export function evaluateDiscoveries(memory: PetMemory, config: BrainConfig, petN
   const player = memory.preference('player');
   if (player && player.positive >= 6 && player.score >= 0.3) {
     push({ key: 'likes:player', title: 'Confía en ti', text: `${petName} busca tu compañía y disfruta de tus caricias.`, icon: 'heartHand', evidence: player.positive, subject: 'player' });
+  }
+
+  // Aprendizaje de la llamada: el cerebro cambió Y la conducta lo confirma
+  const responses = memory.stats.experiencesByKind.called_responded ?? 0;
+  if (learning && responses >= DISCOVERY_RULES.callMinResponses && learning.pathwayDelta('playerCalling') >= DISCOVERY_RULES.callMinPathwayDelta) {
+    push({ key: 'learned:call', title: 'Está aprendiendo tu llamada', text: `${petName} está empezando a entender tu llamada.`, icon: 'wave', evidence: responses, subject: 'player' });
   }
 
   // Rasgos de personalidad revelados

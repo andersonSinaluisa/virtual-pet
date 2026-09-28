@@ -11,7 +11,7 @@ import { GameSession } from '../session/GameSession';
 let n = 0;
 function exp(kind: ExperienceKind, subject: SubjectKey | null, valence = 0.6, intensity = 0.6): Experience {
   n++;
-  return { id: `e${n}`, at: 1000 + n, day: 1, tick: n, kind, subject, valence, intensity, gameId: null, offline: false };
+  return { id: `e${n}`, at: 1000 + n, day: 1, tick: n, kind, subject, valence, intensity, gameId: null, offline: false, reward: 0, actions: [] };
 }
 
 describe('Preferencias', () => {

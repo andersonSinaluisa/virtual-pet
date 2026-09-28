@@ -13,8 +13,9 @@
  * Nunca se guardan objetos THREE ni la simulación en estos stores.
  */
 import type { AnyGameView } from '@/core/games';
+import type { Discovery } from '@/core/memory/types';
 import { DEFAULT_SETTINGS, type SettingsData } from '@/core/persistence/SaveGame';
-import type { PetSnapshot } from '@/core/session/GameSession';
+import type { GrowthEvent, PetSnapshot } from '@/core/session/GameSession';
 import type { AwayReport } from '@/core/simulation/OfflineSimulation';
 
 import { createStore } from './createStore';
@@ -47,4 +48,12 @@ export function pushToast(t: Omit<Toast, 'id'>): void {
 
 export const settingsStore = createStore<SettingsData>({ ...DEFAULT_SETTINGS });
 
-export const devStore = createStore<{ running: boolean; speed: number; debugScene: boolean }>({ running: true, speed: 1, debugScene: false });
+// Descubrimiento pendiente de mostrar ("✨ Descubriste algo" / "❤️ está aprendiendo...")
+export const discoveryStore = createStore<{ discovery: Discovery; momentId: string | null } | null>(null);
+
+// v6: "🌱 está creciendo" pendiente de mostrar (se enseña después de "Mientras no estabas")
+export const growthStore = createStore<GrowthEvent | null>(null);
+// Versión del aprendizaje (sube como mucho 1 vez/s: la UI no se redibuja por cada Δw)
+export const learningStore = createStore(0);
+
+export const devStore = createStore<{ running: boolean; speed: number; debugScene: boolean; clockSpeed: number; growthPreview: number | null }>({ running: true, speed: 1, debugScene: false, clockSpeed: 1, growthPreview: null });

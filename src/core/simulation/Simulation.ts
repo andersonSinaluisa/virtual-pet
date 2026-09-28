@@ -8,6 +8,7 @@
  *     → ActionTranslator  spikes de salida → acciones
  *     → ActionSystem      ejecuta: Movement / Expression / World
  *     → ConflictMonitor   registra acciones incompatibles
+ *     → Attention         spikes de las neuronas de atención → foco del próximo tick (v4)
  *     → SpikeTrace        guarda la causalidad real para explicarla
  *     → WORLD (nuevo ciclo)
  *
@@ -15,7 +16,7 @@
  */
 import type { Action } from '../brain/Actions';
 import { Brain } from '../brain/Brain';
-import type { BrainConfig, SensorKey } from '../brain/BrainConfig';
+import { OBJECT_CHANNELS, type BrainConfig, type SensorKey } from '../brain/BrainConfig';
 import type { Network } from '../neural/Network';
 import type { NeuronId } from '../neural/Neuron';
 import { ActionSystem } from './ActionSystem';
@@ -67,6 +68,8 @@ export class Simulation {
   readonly trace = new SpikeTrace(120);
   last: StepResult;
   overrides: Partial<Record<SensorKey, SensorOverride>> = {};
+  // Actividad reciente de las neuronas de atención por objeto (v4)
+  readonly attention: Partial<Record<(typeof OBJECT_CHANNELS)[number]['kind'], number>> = {};
 
   constructor(readonly config: SimConfig, readonly brainConfig: BrainConfig) {
     this.world = new World(config);
@@ -87,6 +90,7 @@ export class Simulation {
   }
 
   step(opts: StepOptions = {}): StepResult {
+    this.world.attention = this.attention;
     this.world.update(opts.timeScale ?? 1);
     const events = this.world.drainEvents();
     const perception = this.applyOverrides(this.world.perceive());
@@ -94,6 +98,7 @@ export class Simulation {
 
     const spiked = this.network.tick();
     this.trace.record(this.network, spiked);
+    this.updateAttention(spiked);
 
     const actions = this.translator.fromSpikes(spiked);
     this.actionSystem.trigger(actions);
@@ -115,7 +120,17 @@ export class Simulation {
     return this.last;
   }
 
+  // EMA de spikes: la neurona de atención de un objeto que dispara más, más "tira" del foco
+  private updateAttention(spiked: readonly number[]): void {
+    const decay = this.config.world.attentionDecay;
+    for (const ch of OBJECT_CHANNELS) {
+      const id = this.brain.circuitKeyToNeuron[ch.attention];
+      this.attention[ch.kind] = (this.attention[ch.kind] ?? 0) * decay + (spiked.includes(id) ? 1 : 0);
+    }
+  }
+
   reset(): void {
+    for (const k of Object.keys(this.attention) as (keyof typeof this.attention)[]) delete this.attention[k];
     this.world.reset();
     this.network.reset();
     this.actionSystem.reset();

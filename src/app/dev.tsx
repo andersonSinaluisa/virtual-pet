@@ -11,6 +11,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createBrainConfig } from '@/core/brain/BrainConfig';
 import { PET_STATS } from '@/core/simulation/SimConfig';
 import { ITEMS, NOVEL_KINDS, type ItemKind } from '@/core/world/Items';
+import { LearningLab } from '@/components/dev/LearningLab';
+import { RoutineLab } from '@/components/dev/RoutineLab';
+import { GrowthLab } from '@/components/dev/GrowthLab';
 import { IconButton, SoftButton, StrongButton } from '@/components/ui/Buttons';
 import { Squishable } from '@/components/ui/Squishable';
 import { Card } from '@/components/ui/Surfaces';
@@ -75,6 +78,10 @@ export default function DevTools() {
           </View>
           <SoftButton label="Inspector de neuronas" icon="brain" onPress={() => router.push({ pathname: '/brain', params: { mode: 'tech' } })} />
         </Card>
+
+        <LearningLab />
+        <RoutineLab />
+        <GrowthLab />
 
         <Card style={styles.card}>
           <Text variant="labelMd" color={colors.primary} uppercase>Forzar sensor (15 ticks)</Text>

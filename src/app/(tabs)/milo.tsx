@@ -7,7 +7,10 @@
 import { useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 
+import { interpretObjectPreferences } from '@/core/discovery/PersonalityInterpreter';
 import { subjectEmoji, subjectName } from '@/core/memory/subjects';
+import { GrowthSection } from '@/components/growth/GrowthSection';
+import { RoutineSection } from '@/components/routines/RoutineSection';
 import { AppHeader } from '@/components/ui/AppHeader';
 import { BottomSheet } from '@/components/ui/BottomSheet';
 import { SoftButton, StrongButton } from '@/components/ui/Buttons';
@@ -32,6 +35,8 @@ export default function DiscoveringMilo() {
   const hidden = traits.filter((t) => !t.revealed);
   const last = session.memory.discoveries[0];
   const prefs = session.memory.preferences().sort((a, b) => b.score - a.score);
+  // Interpretación (no decide nada): cuánto cambió el cerebro con cada objeto
+  const brainByKind = new Map(interpretObjectPreferences(session.memory, session.plasticity).map((o) => [o.kind as string, o.brain]));
 
   return (
     <View style={styles.root}>
@@ -73,6 +78,10 @@ export default function DiscoveringMilo() {
           </Card>
         ) : null}
 
+        <GrowthSection session={session} />
+
+        <RoutineSection session={session} name={pet.name} />
+
         {last ? (
           <View style={styles.last}>
             <View style={styles.row}><Icon name="star" size={16} color={colors.primary} /><Text variant="labelSm" color={colors.primary} uppercase>Último descubrimiento</Text></View>
@@ -101,6 +110,7 @@ export default function DiscoveringMilo() {
                 <View style={[styles.prefFill, p.score >= 0 ? { left: '50%', width: `${Math.min(50, p.score * 50)}%`, backgroundColor: colors.secondaryFixedDim } : { right: '50%', width: `${Math.min(50, -p.score * 50)}%`, backgroundColor: colors.rose }]} />
               </View>
               <Text variant="bodyXs" color={colors.textMuted}>{p.positive} buenas · {p.negative} difíciles · {p.interactions} en total</Text>
+              {(brainByKind.get(p.subject) ?? 0) > 0.05 ? <Text variant="bodyXs" color={colors.tertiary}>🧠 Su cerebro ya lo asocia con cosas buenas</Text> : null}
             </View>
           </View>
         ))}

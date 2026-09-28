@@ -70,7 +70,7 @@ export default function BrainView() {
 
         {mode === 'simple' ? (
           <>
-            <Text variant="headlineSm">¿Cómo decidió {pet.name}? ✨</Text>
+            <Text variant="headlineSm">🧠 ¿Por qué hizo eso?</Text>
             <BrainSimple session={session} />
           </>
         ) : (

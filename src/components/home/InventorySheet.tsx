@@ -22,16 +22,16 @@ const CARE: { kind: WorldInteraction; label: string; icon: IconName; accent: Acc
   { kind: 'water', label: 'Agua', icon: 'water', accent: 'sky' },
   { kind: 'treat', label: 'Galletita', icon: 'cookie', accent: 'butter' },
   { kind: 'call', label: 'Llamar', icon: 'voice', accent: 'primary' },
-  { kind: 'light', label: 'Luz', icon: 'light', accent: 'tertiary' },
+  { kind: 'light', label: 'Lámpara', icon: 'light', accent: 'tertiary' },
   { kind: 'noise', label: 'Ruido', icon: 'noise', accent: 'rose' },
 ];
 
 export function CarePanel() {
-  const lightOn = useStore(petStore, (p) => p?.lightOn ?? true);
+  const lightOn = useStore(petStore, (p) => p?.lampOn ?? false);
   return (
     <View style={styles.careGrid}>
       {CARE.map((c) => {
-        const label = c.kind === 'light' ? (lightOn ? 'Apagar luz' : 'Encender') : c.label;
+        const label = c.kind === 'light' ? (lightOn ? 'Apagar lámpara' : 'Encender lámpara') : c.label;
         return (
           <Squishable key={c.kind} style={styles.care} accessibilityLabel={label} onPress={() => SessionController.interact(c.kind)}>
             <View style={[styles.careIcon, { backgroundColor: accents[c.accent].bg }]}>

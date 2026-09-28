@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 
 import type { NeuronId } from '@/core/neural/Neuron';
+import type { Synapse } from '@/core/neural/Synapse';
 import type { GameSession } from '@/core/session/GameSession';
 import { SoftButton } from '@/components/ui/Buttons';
 import { Squishable } from '@/components/ui/Squishable';
@@ -16,7 +17,7 @@ import { Card, Chip } from '@/components/ui/Surfaces';
 import { Text } from '@/components/ui/Text';
 import { SessionController } from '@/services/SessionController';
 import { useStore } from '@/state/createStore';
-import { devStore } from '@/state/stores';
+import { devStore, learningStore } from '@/state/stores';
 import { alpha, colors, fonts, radius, spacing } from '@/theme';
 
 const RASTER_TICKS = 40;
@@ -52,6 +53,8 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 export function BrainTechnical({ session }: { session: GameSession }) {
   const [selected, setSelected] = useState<NeuronId | null>(null);
+  const [showChanged, setShowChanged] = useState(false);
+  useStore(learningStore);
   const running = useStore(devStore, (d) => d.running);
   const speed = useStore(devStore, (d) => d.speed);
   const brain = session.sim.brain, net = session.sim.network;
@@ -87,6 +90,25 @@ export function BrainTechnical({ session }: { session: GameSession }) {
 
       {selected !== null ? <Inspector session={session} id={selected} onSelect={setSelected} /> : null}
 
+      <Card style={styles.section}>
+        <View style={styles.rowBetween}>
+          <Text variant="labelMd" color={colors.primary} uppercase>Aprendizaje · {session.plasticity.experiencesApplied} experiencias</Text>
+          <SoftButton label={showChanged ? 'Ocultar' : 'Conexiones que más cambiaron'} onPress={() => setShowChanged(!showChanged)} />
+        </View>
+        {showChanged ? (
+          session.plasticity.topChanged(12).length ? session.plasticity.topChanged(12).map((e) => (
+            <Squishable key={e.key} onPress={() => setSelected(e.synapse.toNeuron)} style={styles.syn} scaleTo={0.98}>
+              <Text variant="labelSm" numberOfLines={1} style={{ flex: 1 }}>{e.key} <Text variant="labelXs" color={colors.textSubtle}>N{e.synapse.fromNeuron}→N{e.synapse.toNeuron}</Text></Text>
+              <SynapseNumbers syn={e.synapse} />
+            </Squishable>
+          )) : <Text variant="bodySm" color={colors.textMuted}>Todavía no ha cambiado ninguna conexión.</Text>
+        ) : null}
+      </Card>
+
+      <GrowthBrainCard session={session} />
+
+      <ContextPathways session={session} onSelect={setSelected} />
+
       <Section title="Capa 1 · Sensores">{rows(brain.sensorLayer.map((n) => n.id), (id) => {
         const r = readings.find((x) => x.neuron === id);
         return r ? r.value.toFixed(2) : undefined;
@@ -115,10 +137,12 @@ function Inspector({ session, id, onSelect }: { session: GameSession; id: Neuron
   const n = net.neurons[id], d = brain.describe(id);
   const incoming = net.incoming(id).filter((s) => s.weight !== 0).sort((a, b) => Math.abs(b.weight) - Math.abs(a.weight)).slice(0, 12);
   const outgoing = net.outgoing(id).filter((s) => s.weight !== 0).sort((a, b) => Math.abs(b.weight) - Math.abs(a.weight)).slice(0, 8);
-  const syn = (other: NeuronId, w: number, key: string) => (
+  const syn = (other: NeuronId, s: Synapse, key: string) => (
     <Squishable key={key} onPress={() => onSelect(other)} style={styles.syn} scaleTo={0.98}>
-      <Text variant="labelSm" numberOfLines={1} style={{ flex: 1 }}>{brain.describe(other).label} <Text variant="labelXs" color={colors.textSubtle}>N{other}</Text></Text>
-      <Text style={[styles.num, { color: w > 0 ? colors.secondary : colors.error }]}>{w > 0 ? '+' : ''}{w.toFixed(2)}</Text>
+      <Text variant="labelSm" numberOfLines={1} style={{ flex: 1 }}>{brain.describe(other).label} <Text variant="labelXs" color={colors.textSubtle}>N{other}{s.plastic ? ' · plástica' : ''}</Text></Text>
+      {s.plastic ? <SynapseNumbers syn={s} /> : (
+        <Text style={[styles.num, { color: s.weight > 0 ? colors.secondary : colors.error }]}>{s.weight > 0 ? '+' : ''}{s.weight.toFixed(2)}</Text>
+      )}
     </Squishable>
   );
   return (
@@ -135,14 +159,71 @@ function Inspector({ session, id, onSelect }: { session: GameSession; id: Neuron
         <Chip small label={`${n.spikeCount} spikes`} bg={colors.card} color={colors.text} />
       </View>
       {incoming.length ? <Text variant="labelSm" color={colors.textMuted}>Sinapsis entrantes (peso)</Text> : null}
-      {incoming.map((s) => syn(s.fromNeuron, s.weight, `i${s.fromNeuron}`))}
+      {incoming.map((s) => syn(s.fromNeuron, s, `i${s.fromNeuron}`))}
       {outgoing.length ? <Text variant="labelSm" color={colors.textMuted}>Sinapsis salientes (peso)</Text> : null}
-      {outgoing.map((s) => syn(s.toNeuron, s.weight, `o${s.toNeuron}`))}
+      {outgoing.map((s) => syn(s.toNeuron, s, `o${s.toNeuron}`))}
     </Card>
   );
 }
 
+// v6: el cerebro a lo largo del crecimiento (la etapa modula la plasticidad; los pesos no se reinician)
+function GrowthBrainCard({ session }: { session: GameSession }) {
+  const g = session.growth;
+  const learned = session.plasticity.entries.filter((e) => Math.abs(e.synapse.lifetimeDelta) > 1e-4).length;
+  const blocked = Object.entries(g.blockedCounts).map(([a, n]) => `${a}×${n}`).join(' ') || '—';
+  const stages = g.state.history.map((h) => `${h.stage} (día ${h.petDay})`).join(' → ');
+  return (
+    <Card style={styles.section}>
+      <Text variant="labelMd" color={colors.primary} uppercase>Desarrollo del cerebro</Text>
+      <Text style={styles.small}>Etapa: {g.stage} · desarrollo de la etapa {(g.progress * 100).toFixed(0)} % · plasticidad ×{g.plasticityMultiplier.toFixed(2)}</Text>
+      <Text style={styles.small}>Experiencias vividas: {session.memory.experiences.length} · aprendidas (con cambio de pesos): {session.plasticity.experiencesApplied} · sinapsis que cambiaron: {learned} de {session.plasticity.entries.length}</Text>
+      <Text style={styles.small}>Salidas que el cuerpo aún no puede ejecutar: {blocked}</Text>
+      <Text style={styles.small}>Historia: {stages}</Text>
+      <Text style={styles.small}>Cerebro inicial vs actual: ver «Conexiones que más cambiaron» (inicial → actual).</Text>
+    </Card>
+  );
+}
+
+// v5: vías de CONTEXTO (hora, luz, lugar, actividad) → descanso/actividad: inicial → actual.
+// Muestra lo que aprendió sobre "cuándo/dónde" sin interpretarlo.
+const CONTEXT_ROWS = ['time00', 'time04', 'time08', 'time12', 'time16', 'time20', 'lightLevel', 'darkness', 'zoneBed', 'recentActivity'] as const;
+const CONTEXT_TARGETS = ['restCircuit', 'activityCircuit'] as const;
+
+function ContextPathways({ session, onSelect }: { session: GameSession; onSelect: (id: NeuronId) => void }) {
+  const [open, setOpen] = useState(false);
+  const entries = session.plasticity.entries.filter((e) => (CONTEXT_ROWS as readonly string[]).includes(e.from) && (CONTEXT_TARGETS as readonly string[]).includes(e.to));
+  return (
+    <Card style={styles.section}>
+      <View style={styles.rowBetween}>
+        <Text variant="labelMd" color={colors.primary} uppercase>Contexto · hora, luz, lugar</Text>
+        <SoftButton label={open ? 'Ocultar' : 'Ver vías'} onPress={() => setOpen(!open)} />
+      </View>
+      {open ? entries.map((e) => (
+        <Squishable key={e.key} onPress={() => onSelect(e.synapse.toNeuron)} style={styles.syn} scaleTo={0.98}>
+          <Text variant="labelSm" numberOfLines={1} style={{ flex: 1 }}>{e.key}</Text>
+          <SynapseNumbers syn={e.synapse} />
+        </Squishable>
+      )) : null}
+    </Card>
+  );
+}
+
+// Datos REALES de una sinapsis plástica: inicial → actual (Δ de por vida), elegibilidad, última recompensa
+function SynapseNumbers({ syn }: { syn: Synapse }) {
+  const d = syn.lifetimeDelta;
+  return (
+    <View style={styles.synNums}>
+      <Text style={styles.small}>{syn.initialWeight.toFixed(3)} → {syn.weight.toFixed(3)}</Text>
+      <Text style={[styles.small, { color: d > 0 ? colors.secondary : d < 0 ? colors.error : colors.textSubtle }]}>Δ {d >= 0 ? '+' : ''}{d.toFixed(3)}</Text>
+      <Text style={styles.small}>e {syn.eligibility.toFixed(2)} · últ. e {syn.lastEligibility.toFixed(2)} · r {syn.lastReward >= 0 ? '+' : ''}{syn.lastReward.toFixed(2)}</Text>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
+  synNums: { alignItems: 'flex-end' },
+  small: { fontFamily: fonts.bodySemi, fontSize: 10, color: colors.textMuted, fontVariant: ['tabular-nums'] },
+  rowBetween: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 6, flexWrap: 'wrap' },
   root: { gap: spacing.md },
   header: { gap: spacing.sm },
   stats: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },

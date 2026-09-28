@@ -16,6 +16,8 @@
 import * as THREE from 'three';
 
 import { PetExpressions, type ExpressionName } from './PetExpressions';
+import type { AnimationStyle } from '@/core/growth/GrowthConfig';
+
 import type { PetModel } from './PetModel';
 
 const POSE_KEYS = ['motionY', 'motionX', 'motionRotX', 'motionRotZ', 'bodyScaleY', 'bodyScaleXZ', 'bodyRotY', 'bodyRotZ',
@@ -51,6 +53,8 @@ export class PetAnimator {
   };
   private readonly look = { target: null as THREE.Vector3 | null, weight: 0, yaw: 0, pitch: 0, tilt: 0, tiltTarget: 0 };
   private pose = zeroPose();
+  // v6: estilo por edad (misma acción, distinto cuerpo): lo fija GrowthVisualController
+  private style: AnimationStyle = { stepRate: 1, bounce: 1, wobble: 0, curl: 0 };
   private readonly tmp = new THREE.Vector3();
 
   constructor(private readonly model: PetModel) {
@@ -66,6 +70,28 @@ export class PetAnimator {
   setHeadTilt(v: number): void { this.look.tiltTarget = v; }
   // target en coordenadas del mundo 3D, o null
   lookAt(target: THREE.Vector3 | null): void { this.look.target = target; }
+  setStyle(style: AnimationStyle): void { this.style = style; }
+
+  // Variantes por edad sobre la misma contribución: el bebé anda a pasitos, rebota y se tambalea;
+  // se acurruca más al dormir. El adulto da pasos largos y estables.
+  private styled(channel: ChannelName, state: string, part: Partial<Pose>): Partial<Pose> {
+    const st = this.style;
+    if (channel !== 'locomotion') return part;
+    if (state === 'walk' || state === 'run') {
+      const ph = this.phase;
+      return {
+        ...part,
+        motionY: (part.motionY ?? 0) * st.bounce,
+        motionRotZ: (part.motionRotZ ?? 0) + st.wobble * 0.08 * Math.sin(ph * 0.5),
+        legLRotX: (part.legLRotX ?? 0) / Math.max(0.6, st.stepRate),
+        legRRotX: (part.legRRotX ?? 0) / Math.max(0.6, st.stepRate),
+      };
+    }
+    if (state === 'sleep') {
+      return { ...part, headPitch: (part.headPitch ?? 0) + 0.2 * st.curl, bodyScaleY: (part.bodyScaleY ?? 0) - 0.05 * st.curl, headRoll: (part.headRoll ?? 0) + 0.15 * st.curl };
+    }
+    return part;
+  }
 
   // ---- Contribuciones de cada estado a la pose ----
   private contrib(channel: ChannelName, state: string, t: number): Partial<Pose> {
@@ -117,7 +143,7 @@ export class PetAnimator {
     const t = this.t;
     this.speed = speed || 0;
     // Los pasos avanzan con la distancia: los pies no "patinan"
-    this.phase += this.speed * dt * 14 + (this.channels.locomotion.active.has('run') ? dt * 2 : 0);
+    this.phase += (this.speed * dt * 14 + (this.channels.locomotion.active.has('run') ? dt * 2 : 0)) * this.style.stepRate;
 
     const target = zeroPose();
     for (const name of Object.keys(this.channels) as ChannelName[]) {
@@ -128,7 +154,7 @@ export class PetAnimator {
         const w = (ch.weights[st] ?? 0) + ((ch.active.has(st) ? 1 : 0) - (ch.weights[st] ?? 0)) * k;
         ch.weights[st] = w;
         if (w < 0.002) { if (!ch.active.has(st)) delete ch.weights[st]; continue; }
-        const part = this.contrib(name, st, t);
+        const part = this.styled(name, st, this.contrib(name, st, t));
         for (const key in part) target[key as PoseKey] += (part[key as PoseKey] ?? 0) * w;
       }
     }
