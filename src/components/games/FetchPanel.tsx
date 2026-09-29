@@ -62,10 +62,11 @@ export function FetchPanel({ view, petName, species }: { view: FetchView; petNam
 const styles = StyleSheet.create({
   root: { flex: 1 },
   overlay: { padding: spacing.md, gap: spacing.sm },
-  actions: { alignItems: 'center', gap: spacing.sm, paddingBottom: spacing.md },
+  // Botones con tamaño propio: la zona de acciones nunca se estira (antes ¡Lanzar! ocupaba todo el alto)
+  actions: { flexGrow: 0, flexShrink: 0, alignItems: 'center', gap: spacing.sm, paddingBottom: spacing.md },
   dev: { alignSelf: 'flex-end' },
   throw: {
-    alignSelf: 'center', paddingHorizontal: 24, paddingVertical: 14, borderRadius: radius.full,
+    alignSelf: 'center', height: 52, flexGrow: 0, flexShrink: 0, paddingHorizontal: 24, justifyContent: 'center', alignItems: 'center', borderRadius: radius.full,
     backgroundColor: colors.error, // si el degradado no se dibuja, el botón sigue viéndose
     experimental_backgroundImage: `linear-gradient(135deg, #ef4444 0%, ${colors.error} 100%)`, boxShadow: '0 8px 18px rgba(186,26,26,0.35)',
   },
