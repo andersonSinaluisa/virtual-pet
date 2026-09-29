@@ -115,3 +115,16 @@ La noche no obliga a dormir: con 40 días de rutina nocturna, una mascota descan
 1. **Escala de tiempo en la app:** a 3 ticks/s, un día real son unos 260 000 ticks, así que en tiempo real la mascota tiene muchos ciclos de sueño por día. La hora y la luz sí son reales y el cerebro las percibe, pero una rutina de 24 h emerge en las simulaciones a 1 min/tick: laboratorio de desarrollo, «Vivir días» y la sección de este informe. Hacer que la fisiología de la app funcione en minutos de mundo es una decisión de producto pendiente.
 2. El componente horario aprendido es débil (sección 1). El siguiente paso con sentido sería una consecuencia que dependa de la hora, por ejemplo perderse las sesiones de juego por dormir de día. No lo son más tasa ni más recompensa: medido, eso solo añade ruido.
 3. Los resultados varían entre semillas. Por eso los tests usan sumas de 3 semillas y la dirección del efecto, no valores exactos.
+
+## 8. Revalidación tras HOME 2.0 (casa amueblada con obstáculos reales)
+
+Con la casa nueva (sofá, chimenea, cómoda, plantas y lámpara con colisión física), sueño A/B durante 30 días, 5 semillas:
+
+| | A consistente | B irregular |
+|---|---|---|
+| Sueño de noche en su vida | **0.41–0.51** | 0.34–0.40 (A > B en 5/5) |
+| Selectividad aprendida (mismo contexto) | 0.48–0.57 | 0.48–0.65 (**B > A en 3/5**) |
+| Referencia sin obstáculos (mismo código) | 0.56–0.63 | 0.50–0.57 (A ≥ B en 5/5) |
+
+- **Se sostiene:** la diferencia de conducta en su vida.
+- **Ya no se sostiene:** la selectividad noche/día aprendida, que ya era débil. Los caminos y los rodeos del nuevo espacio cambian lo que se vive y, con ello, lo que se aprende. El test solo exige ahora lo robusto.

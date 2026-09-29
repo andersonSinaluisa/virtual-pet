@@ -13,6 +13,15 @@ import { GameSession } from '../session/GameSession';
 import type { PetStat } from '../simulation/SimConfig';
 import type { ItemKind } from '../world/Items';
 
+// v9: la evaluación ocurre SIEMPRE a mediodía (antes heredaba la hora real de la máquina:
+// de noche, a oscuras, la misma mascota puntuaba distinto). Reloj fijo sin depender del módulo de tiempo.
+function evalClock(source: GameSession): { now: () => number } {
+  const d = new Date(source.clock.now());
+  d.setHours(12, 0, 0, 0);
+  const t = d.getTime();
+  return { now: () => t };
+}
+
 export type YieldFn = () => Promise<void>;
 const noYield: YieldFn = async () => {};
 
@@ -83,7 +92,7 @@ export interface PreferenceReport {
 
 // Coloca a y b a la misma distancia (alternando lados) y mide la implicación con cada uno.
 export async function evaluatePreference(source: GameSession, kinds: [ItemKind, ItemKind], trials = 40, ticksPerTrial = 45, seed = 1, yieldFn: YieldFn = noYield): Promise<PreferenceReport> {
-  const s = GameSession.clone(source, { rng: seededRng(seed) });
+  const s = GameSession.clone(source, { rng: seededRng(seed), clock: evalClock(source) });
   s.setEvaluation(true); // medir no debe cambiar el cerebro
   s.setPlayerPresent(true);
   const empty = (): ObjectEngagement => ({ focus: 0, investigate: 0, play: 0, picks: 0, firstReach: 0, score: 0 });
@@ -142,7 +151,7 @@ export interface CallReport {
 // "Ven aquí" medido: desde posiciones equivalentes. call = false → control sin llamar
 // (¿aprendió la LLAMADA o solo a acercarse?)
 export async function evaluateCall(source: GameSession, trials = 40, window = 40, seed = 3, yieldFn: YieldFn = noYield, call = true): Promise<CallReport> {
-  const s = GameSession.clone(source, { rng: seededRng(seed) });
+  const s = GameSession.clone(source, { rng: seededRng(seed), clock: evalClock(source) });
   s.setEvaluation(true);
   s.setPlayerPresent(true);
   let responses = 0, arrivals = 0, approach = 0;

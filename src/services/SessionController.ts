@@ -32,7 +32,9 @@ import {
   awayStore, devStore, discoveryStore, growthStore, gameStore, learningStore, memoryStore, petStore, pushToast, sessionStore, settingsStore,
 } from '@/state/stores';
 
+import { assetsFor } from '@/render3d/EnvironmentAssetInfo';
 import { AudioManager } from './AudioManager';
+import { environmentAssets } from './environmentAssets';
 import { Mixer } from './audio/Mixer';
 import { PetVoiceBridge } from './audio/PetVoiceBridge';
 import { playWorldSounds, setAmbience } from './WorldAudio';
@@ -120,6 +122,8 @@ class SessionControllerImpl {
     this.detach();
     this.session = session;
     this.lastActiveAt = Date.now();
+    // v9: el escenario del lugar actual se carga en segundo plano antes de que la escena lo pida
+    void environmentAssets.preload(assetsFor(session.world.location));
     const ev = session.events;
     this.unsubs.push(
       ev.on('tick', (r) => this.onTick(r)),

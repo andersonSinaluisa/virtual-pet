@@ -32,6 +32,7 @@ import { PetScene, type SceneSource } from '@/render3d/PetScene';
 import { createRenderer } from '@/render3d/Studio';
 import { FoleySystem } from '@/services/audio/FoleySystem';
 import { PetVoiceBridge } from '@/services/audio/PetVoiceBridge';
+import { environmentAssets } from '@/services/environmentAssets';
 import { SessionController } from '@/services/SessionController';
 import { registerCapturer } from '@/services/snapshots';
 import { useStore } from '@/state/createStore';
@@ -76,6 +77,7 @@ export function PetCanvas({ species, mode = 'home', framing = 'room', source, st
   const focused = useIsFocused();
   const fur = useStore(settingsStore, (s) => s.fur);
   const shadows = useStore(settingsStore, (s) => s.shadows);
+  const quality = useStore(settingsStore, (s) => s.graphicsQuality ?? 'medium');
   const debugScene = useStore(devStore, (d) => d.debugScene);
   const [failed, setFailed] = useState<string | null>(null);
   const [appActive, setAppActive] = useState(AppState.currentState === 'active');
@@ -140,6 +142,9 @@ export function PetCanvas({ species, mode = 'home', framing = 'room', source, st
     glRef.current = null;
   }, []);
 
+  // v9: calidad gráfica en caliente (detalle del escenario; no cambia el juego)
+  useEffect(() => { sceneRef.current?.setQuality(quality); }, [quality]);
+
   // v7: fundido al cambiar de lugar + medidor de FPS
   const fade = useRef(new Animated.Value(0)).current;
   const lastLocation = useRef<string | null>(null);
@@ -160,7 +165,8 @@ export function PetCanvas({ species, mode = 'home', framing = 'room', source, st
       const p = perf.current;
       p.frames++; p.acc += dt;
       if (now - p.last > 1000) {
-        devStore.set((d) => ({ ...d, perf: { fps: p.frames / Math.max(1e-3, p.acc), frameMs: (p.acc / Math.max(1, p.frames)) * 1000, tickMs: d.perf?.tickMs ?? 0 } }));
+        // v9: métricas reales del renderer (draw calls, triángulos, texturas) para el Environment Lab
+        devStore.set((d) => ({ ...d, perf: { fps: p.frames / Math.max(1e-3, p.acc), frameMs: (p.acc / Math.max(1, p.frames)) * 1000, tickMs: d.perf?.tickMs ?? 0 }, sceneMetrics: scene.metrics() }));
         p.frames = 0; p.acc = 0; p.last = now;
       }
     }
@@ -211,7 +217,8 @@ export function PetCanvas({ species, mode = 'home', framing = 'room', source, st
       if (PetQuality.fur !== fur) { PetQuality.fur = fur; PetMaterials.clear(); }
       PetQuality.shadows = shadows;
       const renderer = createRenderer(gl as unknown as WebGL2RenderingContext, { shadows });
-      const scene = new PetScene(renderer, src, { species, framing, debug: debugScene && __DEV__ });
+      // Escenarios GLB en el juego; las vistas previas (onboarding) usan el entorno procedural ligero
+      const scene = new PetScene(renderer, src, { species, framing, debug: debugScene && __DEV__, assets: mode === 'preview' ? undefined : environmentAssets, quality });
       size.current = { w: gl.drawingBufferWidth, h: gl.drawingBufferHeight };
       scene.resize(size.current.w, size.current.h);
       glRef.current = gl;

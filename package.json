@@ -66,7 +66,10 @@
     "audio:fetch": "node scripts/audio/fetch-pet-audio.mjs",
     "audio:process": "python3 scripts/audio/process_pet_audio.py",
     "audio:validate": "node scripts/audio/validate-pet-audio.mjs",
-    "report:audio": "jest src/core/__tests__/petAudioReport.test.ts"
+    "report:audio": "jest src/core/__tests__/petAudioReport.test.ts",
+    "report:environments": "jest src/render3d/__tests__/environmentReport.test.ts",
+    "test:environments": "jest src/render3d/__tests__/environments",
+    "inspect:glb": "node scripts/inspect-glb.mjs"
   },
   "private": true,
   "jest": {

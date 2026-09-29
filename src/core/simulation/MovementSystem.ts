@@ -12,6 +12,8 @@
  * hacia lo que mira o hacia donde camina, con una velocidad de giro máxima.
  * Si el destino era una salida (puerta del jardín) y llega, cruza.
  */
+import { insideSolid, resolveCollision } from '../world/EnvironmentLayouts';
+import { navGrid } from '../world/NavGrid';
 import { angleDiff } from '../world/Perception';
 import type { Point } from './Pet';
 import type { SimConfig } from './SimConfig';
@@ -23,6 +25,8 @@ export type MoveIntent =
   | { kind: 'wander'; speed: number }
   | { kind: 'brake'; factor: number }
   | { kind: 'boost'; factor: number };
+
+const UNSTICK_STEP = 0.02; // máximo por tick para salir de un mueble si ya estaba dentro (partidas antiguas)
 
 export class MovementSystem {
   constructor(private readonly config: SimConfig) {}
@@ -70,6 +74,23 @@ export class MovementSystem {
     if (ny < b.minY || ny > b.maxY) pet.heading = -(pet.heading ?? 0);
     nx = Math.max(b.minX, Math.min(b.maxX, nx));
     ny = Math.max(b.minY, Math.min(b.maxY, ny));
+    // v9: el cuerpo choca con muebles, árboles y rocas (se desliza a lo largo de ellos)
+    const solid = resolveCollision(world.location, { x: nx, y: ny }, world.bodyRadius);
+    if (solid.hit) {
+      const step = Math.hypot(nx - pet.x, ny - pet.y);
+      let cx = Math.max(b.minX, Math.min(b.maxX, solid.point.x)), cy = Math.max(b.minY, Math.min(b.maxY, solid.point.y));
+      // Deslizarse sin superar el paso (si ya estaba dentro, sale poco a poco: nunca "salta")
+      const moved = Math.hypot(cx - pet.x, cy - pet.y), cap = Math.max(step, UNSTICK_STEP);
+      if (moved > cap) { cx = pet.x + ((cx - pet.x) / moved) * cap; cy = pet.y + ((cy - pet.y) / moved) * cap; }
+      nx = cx; ny = cy;
+      if (!seek) pet.heading = (pet.heading ?? 0) + Math.PI * (0.5 + rng() * 0.5); // deambulando: dar la vuelta
+      // Rincón entre un mueble y el borde (empujar y limitar se contradicen): salir hacia la celda libre más cercana
+      if (insideSolid(world.location, { x: nx, y: ny }, world.bodyRadius * 0.85)) {
+        const g = navGrid(world.location, world.bodyRadius), free = g.centerOf(g.nearestWalkable({ x: nx, y: ny }));
+        const dx = free.x - pet.x, dy = free.y - pet.y, dl = Math.hypot(dx, dy), c = Math.max(step, UNSTICK_STEP);
+        nx = dl > c ? pet.x + (dx / dl) * c : free.x; ny = dl > c ? pet.y + (dy / dl) * c : free.y;
+      }
+    }
 
     const dist = Math.hypot((nx - pet.x) * sx, (ny - pet.y) * sy);
     pet.vx = nx - pet.x; pet.vy = ny - pet.y;

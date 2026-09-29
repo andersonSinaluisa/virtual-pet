@@ -216,8 +216,10 @@ describe('📦 Vertical slice: caja misteriosa', () => {
 describe('Prueba C — dos mascotas, mismo mundo, historias distintas', () => {
   it('una historia aversiva con la caja aprende miedo; otra sin sustos no; responden distinto a la MISMA escena', async () => {
     const A = labPet('Milo', 11), B = labPet('Milo', 11);
-    await boxHistory(A.session, 15, false);
-    await boxHistory(B.session, 15, true); // en su historia, acercarse a la caja coincidió con un golpe fuerte
+    // v9: con la casa amueblada (HOME 2.0) la mascota explora más y visita menos la caja por ensayo;
+    // 15 ensayos daban solo Δ 0.073 de miedo aprendido, 25 dan 0.133 (docs/environment-results.md)
+    await boxHistory(A.session, 25, false);
+    await boxHistory(B.session, 25, true); // en su historia, acercarse a la caja coincidió con un golpe fuerte
     // El cerebro cambió de verdad (vía caja → miedo), no una etiqueta
     expect(B.session.plasticity.synapseDelta('seesBox→fearCircuit')).toBeGreaterThan(A.session.plasticity.synapseDelta('seesBox→fearCircuit') + 0.1);
     const tA = await measureBoxTendency(A.session, 12), tB = await measureBoxTendency(B.session, 12);

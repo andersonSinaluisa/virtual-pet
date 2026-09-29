@@ -28,6 +28,7 @@
  * microeventos. Ver docs/living-world.md.
  */
 
+import { PET_BODY_RADIUS, resolveCollision } from '../world/EnvironmentLayouts';
 import { CLOCK_SENSORS, OBJECT_CHANNELS, ZONE_SENSORS, type SensorKey } from '../brain/BrainConfig';
 import { clockInfo, clockPopulation, type TimeOfDay } from '../time/WorldClock';
 import { clamp01, defaultRng, type Rng } from '../random';
@@ -49,6 +50,9 @@ const APPROACH_RANGE = 0.15;
 const BUMP_DECAY = 0.97;
 
 export type ObjectState = 'stationary' | 'rolling' | 'closed' | 'open' | 'occupied' | 'available' | 'empty' | 'drifting';
+
+// Radio físico de los objetos al chocar con muebles (metros)
+const OBJECT_RADIUS = 0.12;
 
 export interface WorldObject extends Point {
   id: number;
@@ -217,11 +221,21 @@ export class World {
     this.firstVisit = null;
   }
 
+  // v9: el cuerpo de la mascota (radio físico en metros; lo escala el crecimiento)
+  bodyScale = 1;
+  get bodyRadius(): number { return PET_BODY_RADIUS * this.bodyScale; }
+
+  // Un punto libre de muebles/árboles (los objetos no pueden quedar dentro del sofá)
+  freePoint(p: Point, radius = OBJECT_RADIUS): Point {
+    return resolveCollision(this.location, p, radius).point;
+  }
+
   private furnish(loc: LocationId): void {
     for (const f of LOCATIONS[loc].furniture) {
       const def = ITEMS[f.kind];
+      const at = resolveCollision(loc, f.at, OBJECT_RADIUS).point;
       this.addObject({
-        type: def.type, kind: f.kind, x: f.at.x, y: f.at.y, fixed: f.fixed,
+        type: def.type, kind: f.kind, x: at.x, y: at.y, fixed: f.fixed,
         amount: f.kind === 'bowl' ? this.config.world.initialFood : f.kind === 'water' ? this.config.world.initialWater : 0,
         interest: def.type === 'hideout' ? 0.1 : 0,
       });
@@ -437,7 +451,7 @@ export class World {
     if (!stored) this.furnish(to);
     if (carried) this.objects.push(carried);
     const exit = exitBetween(from, to);
-    const at = arriveAt ?? exit?.arriveAt ?? LOCATIONS[to].spawnPoints.pet;
+    const at = resolveCollision(to, arriveAt ?? exit?.arriveAt ?? LOCATIONS[to].spawnPoints.pet, this.bodyRadius).point;
     this.pet.x = at.x; this.pet.y = at.y; this.pet.vx = this.pet.vy = 0;
     // Entra mirando hacia dentro del lugar
     this.pet.orientation = Math.atan2((0.5 - at.y) * this.scaleY, (0.5 - at.x) * this.scaleX);
@@ -564,6 +578,9 @@ export class World {
       let bounced = false;
       if (nx < b.minX || nx > b.maxX) { o.vx = -o.vx; nx = Math.max(b.minX, Math.min(b.maxX, nx)); bounced = true; }
       if (ny < b.minY + 0.02 || ny > b.maxY - 0.02) { o.vy = -o.vy; ny = Math.max(b.minY + 0.02, Math.min(b.maxY - 0.02, ny)); bounced = true; }
+      // v9: los objetos rebotan en los muebles y árboles (no atraviesan el sofá)
+      const solid = resolveCollision(this.location, { x: nx, y: ny }, OBJECT_RADIUS);
+      if (solid.hit) { nx = solid.point.x; ny = solid.point.y; o.vx = -o.vx * 0.6; o.vy = -o.vy * 0.6; bounced = true; }
       o.x = nx; o.y = ny;
       const f = (ITEMS[o.kind].friction ?? w.throwFriction) * (o.vx || o.vy ? ground : 1);
       o.vx *= Math.min(0.97, f); o.vy *= Math.min(0.97, f);
@@ -879,8 +896,8 @@ export class World {
   moveObject(id: number, x: number, y: number): void {
     const o = this.getObject(id);
     if (!o || o.fixed || !ITEMS[o.kind].movable || o.id === this.pet.carrying) return;
-    o.x = Math.max(0.03, Math.min(0.97, x));
-    o.y = Math.max(0.02, Math.min(0.98, y));
+    const free = this.freePoint({ x: Math.max(0.03, Math.min(0.97, x)), y: Math.max(0.02, Math.min(0.98, y)) });
+    o.x = free.x; o.y = free.y;
     o.vx = o.vy = 0;
     if (!o.moved) { o.moved = true; this._event('OBJECT_MOVED', 'interestingObjectVisible', o.label); }
     o.novelty = Math.max(o.novelty, 0.3);
@@ -963,7 +980,7 @@ export class World {
   placeItem(kind: ItemKind, pos?: Point, tag: string | null = null): WorldObject {
     const def = ITEMS[kind];
     if (def.type === 'novel') this._limitNovel();
-    const at = pos ?? this._placeNear(this.player.present ? this.player : { x: 0.5, y: 0.6 });
+    const at = this.freePoint(pos ?? this._placeNear(this.player.present ? this.player : { x: 0.5, y: 0.6 }));
     const obj = this.addObject({
       type: def.type, kind, x: at.x, y: at.y, interest: def.interest, pickable: def.pickable, novelty: 0.5, tag,
       state: kind === 'mysteryBox' ? 'closed' : 'stationary',
@@ -1080,7 +1097,8 @@ export class World {
       });
     const loc = isLocationId(s.location) && LOCATIONS[s.location].available ? s.location : 'room';
     this.location = loc;
-    this.objects = valid(s.objects);
+    // v9: si un mueble nuevo del escenario ocupa el sitio de un objeto guardado, el objeto se aparta
+    this.objects = valid(s.objects).map((o) => ({ ...o, ...resolveCollision(loc, o, OBJECT_RADIUS).point }));
     this.stash = {};
     if (s.stash && typeof s.stash === 'object') {
       for (const [id, list] of Object.entries(s.stash)) if (isLocationId(id) && id !== loc) this.stash[id] = valid(list);

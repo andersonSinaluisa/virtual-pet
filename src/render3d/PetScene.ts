@@ -31,12 +31,18 @@ import type { World, WorldObject } from '@/core/simulation/World';
 
 import { LOCATIONS, type LocationId } from '@/core/world/Locations';
 
+import { ENVIRONMENT_LAYOUTS, type CameraProfile, type LightingProfileId } from '@/core/world/EnvironmentLayouts';
+
+import { assetsFor } from './EnvironmentAssetInfo';
+import type { EnvironmentAssetManager } from './EnvironmentAssetManager';
+import { buildEnvironmentGLB, disposeEnvRuntime, type EnvRuntime, type EnvStats, type GraphicsQuality } from './EnvironmentBuilder';
+import { EnvironmentLightingController } from './EnvironmentLighting';
 import { buildEnvironment, disposeEnvironment, type BuiltEnvironment } from './Environments';
 import { GrowthVisualController } from './GrowthVisualController';
 import { Pet3D } from './Pet3D';
 import { PetController, type VoiceCue } from './PetController';
 import { propFor } from './Props';
-import { setDarkness, setupStudio, type StudioLights } from './Studio';
+import { setupStudio, type StudioLights } from './Studio';
 
 export const FLOOR_W = 5.2;
 export const FLOOR_D = 3.8;
@@ -59,6 +65,20 @@ export interface WorldDebugFlags {
   perceived: boolean;
   attention: boolean;
   navigation: boolean;
+  semantic?: boolean; // v9: caminable, obstáculos, interacción, aparición, transiciones
+}
+
+// v9: métricas para el Environment Lab (reales, del renderer y del constructor)
+export interface SceneMetrics {
+  location: LocationId | null;
+  source: 'glb' | 'procedural';
+  drawCalls: number;
+  triangles: number;
+  geometries: number;
+  textures: number;
+  env: EnvStats | null;
+  loadMs: number | null; // desde el cambio de lugar hasta el entorno GLB listo
+  errors: string[];
 }
 
 export type CameraFocus = { type: 'pet' } | { type: 'object'; id: number } | null;
@@ -70,6 +90,8 @@ export interface SceneOptions {
   environment?: boolean;
   debug?: boolean; // anillo del objeto percibido (herramienta de desarrollo)
   framing?: 'room' | 'close';
+  assets?: EnvironmentAssetManager; // v9: escenarios GLB (sin él: entorno procedural)
+  quality?: GraphicsQuality;
 }
 
 export type PickResult =
@@ -103,7 +125,17 @@ export class PetScene {
   private readonly floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
   private readonly petProxy: THREE.Mesh;
   private windowMat: THREE.MeshBasicMaterial | null = null;
-  private env: BuiltEnvironment | null = null;
+  private env: BuiltEnvironment | null = null; // procedural (instantáneo / respaldo)
+  private runtime: EnvRuntime | null = null; // GLB (cuando está listo)
+  private readonly assets: EnvironmentAssetManager | null;
+  private quality: GraphicsQuality;
+  private buildToken = 0;
+  private envRequestedAt = 0;
+  private loadMs: number | null = null;
+  private readonly envErrors: string[] = [];
+  private readonly lighting = new EnvironmentLightingController();
+  private readonly preloaded = new Set<LocationId>();
+  private disposed = false;
   private envLocation: LocationId | null = null;
   private readonly pool = new Map<string, THREE.Group[]>();
   debugFlags: WorldDebugFlags = { fov: false, hearing: false, perceived: false, attention: false, navigation: false };
@@ -144,6 +176,8 @@ export class PetScene {
   constructor(private readonly renderer: THREE.WebGLRenderer, private readonly source: SceneSource, opts: SceneOptions) {
     this.debug = !!opts.debug;
     this.framing = opts.framing ?? 'room';
+    this.assets = opts.assets ?? null;
+    this.quality = opts.quality ?? 'medium';
     this.scene.background = this.bgColor;
     this.lights = setupStudio(this.scene, renderer, { extent: 4.2, environment: !!opts.environment });
     this.scene.add(this.lights.key.target);
@@ -189,13 +223,18 @@ export class PetScene {
   // se desecha el entorno anterior y los objetos de allí (quedan guardados en el mundo, no aquí).
   private syncEnvironment(): void {
     const loc = this.source.world.location;
-    if (loc === this.envLocation && this.env) return;
-    if (this.env) disposeEnvironment(this.env);
+    if (loc === this.envLocation && (this.env || this.runtime)) return;
+    if (this.env) { disposeEnvironment(this.env); this.env = null; }
+    if (this.runtime) { disposeEnvRuntime(this.runtime); this.runtime = null; }
     for (const [id, e] of this.entities) this.releaseEntity(id, e);
     this.envLocation = loc;
+    this.lighting.reset();
+    // Siempre algo en pantalla al instante: el entorno procedural. El GLB lo sustituye cuando está listo
+    // (sin pantalla de carga); si falla, el procedural se queda como respaldo.
     this.env = buildEnvironment(loc, FLOOR_W, FLOOR_D);
     this.scene.add(this.env.group);
     this.windowMat = this.env.windowMat;
+    this.requestGLB(loc);
     if (this.pet) {
       const p = this.source.world.pet;
       this.pet.object3D.position.set(this.toX(p.x), 0, this.toZ(p.y));
@@ -205,6 +244,51 @@ export class PetScene {
 
   get location(): LocationId | null {
     return this.envLocation;
+  }
+
+  private requestGLB(loc: LocationId): void {
+    if (!this.assets || !ENVIRONMENT_LAYOUTS[loc]) return;
+    const token = ++this.buildToken;
+    this.envRequestedAt = Date.now();
+    this.loadMs = null;
+    buildEnvironmentGLB(loc, this.assets, this.quality).then((rt) => {
+      if (this.disposed || token !== this.buildToken || this.envLocation !== loc) { disposeEnvRuntime(rt); return; }
+      if (this.env) { disposeEnvironment(this.env); this.env = null; }
+      this.runtime = rt;
+      this.scene.add(rt.group);
+      this.windowMat = null;
+      this.loadMs = Date.now() - this.envRequestedAt;
+      // Solo se conservan los assets de aquí (y lo precargado para el lugar contiguo se decide al acercarse)
+      this.assets?.release(new Set(assetsFor(loc)));
+      this.preloaded.clear();
+    }).catch((e: unknown) => {
+      const msg = `[entorno ${loc}] ${e instanceof Error ? e.message : String(e)}`;
+      this.envErrors.push(msg);
+      if (__DEV__) console.warn(msg, '→ se usa el entorno procedural');
+    });
+  }
+
+  setQuality(q: GraphicsQuality): void {
+    if (q === this.quality) return;
+    this.quality = q;
+    if (this.envLocation) this.requestGLB(this.envLocation);
+  }
+
+  metrics(): SceneMetrics {
+    const info = this.renderer.info;
+    return {
+      location: this.envLocation, source: this.runtime ? 'glb' : 'procedural',
+      drawCalls: info.render.calls, triangles: info.render.triangles, geometries: info.memory.geometries, textures: info.memory.textures,
+      env: this.runtime?.stats ?? null, loadMs: this.loadMs, errors: [...this.envErrors, ...(this.assets?.errors.map((e) => `${e.id}: ${e.message}`) ?? [])],
+    };
+  }
+
+  private get cameraProfile(): CameraProfile | null {
+    return ENVIRONMENT_LAYOUTS[this.envLocation ?? 'room']?.camera ?? null;
+  }
+
+  private get lightingProfile(): LightingProfileId {
+    return ENVIRONMENT_LAYOUTS[this.envLocation ?? 'room']?.lighting ?? 'HOME';
   }
 
   setSpecies(species: SpeciesKey): void {
@@ -390,16 +474,20 @@ export class PetScene {
       this.focusRing.rotation.z = this.t;
     }
 
-    // Luz: ciclo día/noche + lámpara (world.lightLevel), interpolada por frame (sin saltos)
-    this.darkness += ((1 - world.lightLevel) - this.darkness) * (1 - Math.exp(-dt * 2));
-    this.sky.set(DAY_SKY).lerp(DUSK_SKY, dusk(world.daylight));
-    setDarkness(this.scene, this.lights, this.darkness);
-    this.bgColor.set(this.env?.bg ?? ROOM.bg).lerp(NIGHT, this.darkness * 0.85);
+    // v9: luz por PERFIL del lugar (HOME/GARDEN/PARK) con las mismas entradas que el sensor lightLevel
+    // (día del WorldClock, lámpara del mundo, nubes): lo que se ve y lo que la mascota percibe van juntos
+    const lamp = world.def.sensoryProfile.shelter >= 0.5 && world.lightOn;
+    const L = this.lighting.apply(dt, this.lightingProfile, world.daylight, lamp, world.env.cloudCover, this.lights, this.bgColor, this.renderer);
+    this.darkness = 1 - L.brightness;
+    this.sky.set(DAY_SKY).lerp(DUSK_SKY, dusk(world.daylight)).lerp(NIGHT, 1 - world.daylight);
     // La ventana muestra el cielo real: día, atardecer anaranjado o noche (aunque la lámpara esté encendida)
-    this.windowMat?.color.copy(this.sky).lerp(NIGHT, 1 - world.daylight);
+    this.windowMat?.color.copy(this.sky);
+    for (const m of this.runtime?.windowMats ?? []) m.color.copy(this.sky);
     // Fuera: estrellas de noche y farolas encendidas
-    if (this.env?.stars) (this.env.stars.material as THREE.PointsMaterial).opacity = Math.max(0, (1 - world.daylight - 0.4) * 1.6);
-    for (const lamp of this.env?.lamps ?? []) (lamp.material as THREE.MeshBasicMaterial).color.set(world.daylight < 0.35 ? '#FFE9A8' : '#E8E4D8');
+    const stars = this.runtime?.stars ?? this.env?.stars;
+    if (stars) (stars.material as THREE.PointsMaterial).opacity = Math.max(0, (1 - world.daylight - 0.4) * 1.6);
+    for (const bulb of [...(this.env?.lamps ?? []), ...(this.runtime?.bulbs ?? [])]) (bulb.material as THREE.MeshBasicMaterial).color.set(L.lamp > 0.5 ? '#FFE9A8' : '#E8E4D8');
+    this.updateEnvironmentLife(dt, world, root.position, L.lamp, L.lampPower, L.lampColor);
     // La luz principal sigue a la mascota en los sitios grandes (sombras nítidas con el mismo mapa)
     this.lights.key.target.position.set(root.position.x, 0, root.position.z);
     this.lights.key.position.set(root.position.x - 3, 6, root.position.z + 5);
@@ -408,23 +496,66 @@ export class PetScene {
     this.updateCamera(dt, active, root.position);
   }
 
+  // v9: vida del escenario — puertas ↔ salidas del dominio, lámparas ↔ lámpara, plantas que se mecen
+  // (más con una ráfaga de viento del dominio), fundido de lo que tapa a la mascota, paredes laterales
+  private updateEnvironmentLife(dt: number, world: World, petPos: THREE.Vector3, lamp: number, lampPower: number, lampColor: THREE.Color): void {
+    const rt = this.runtime;
+    if (!rt) return;
+    const k = 1 - Math.exp(-dt * 3);
+    for (const d of rt.doors) {
+      const exit = world.def.interactionPoints.exits.find((e) => e.id === d.exitId);
+      const open = exit && world.isDoorOpen(exit) ? 1 : 0;
+      d.open += (open - d.open) * k;
+      d.pivot.children[0].rotation.y = -1.35 * d.open;
+    }
+    for (const m of rt.lampShades) { m.emissive.copy(lampColor); m.emissiveIntensity = 1.4 * lamp; }
+    if (rt.lampLight) { rt.lampLight.intensity = lampPower; rt.lampLight.color.copy(lampColor); rt.lampLight.visible = lampPower > 0.02; }
+    const gust = world.env.wind;
+    for (const s of rt.sway) s.obj.rotation.z = s.amp * (1 + 2.5 * gust) * Math.sin(this.t * 1.3 + s.phase);
+    // Oclusión: si un oclusor queda entre la cámara y la mascota, se vuelve translúcido (barato: esfera vs segmento)
+    const head = this.v1.set(petPos.x, 0.6, petPos.z), cam = this.camera.position;
+    for (const o of rt.occluders) {
+      const hits = segmentSphere(cam, head, o.sphere);
+      const target = hits ? 0.28 : 1;
+      o.fade += (target - o.fade) * (1 - Math.exp(-dt * 6));
+      for (const m of o.mats) { m.transparent = o.fade < 0.99; m.opacity = o.fade; m.depthWrite = o.fade > 0.9; }
+    }
+    // Paredes laterales de la casa: si la cámara (órbita) queda detrás, se ocultan para no tapar la escena
+    for (const w of rt.sideWalls) {
+      const behind = Math.sign(cam.x) === Math.sign(w.x) && Math.abs(cam.x) > Math.abs(w.x) - 0.1;
+      const target = behind ? 0.12 : 1;
+      w.mat.opacity += (target - w.mat.opacity) * k;
+      w.mat.transparent = w.mat.opacity < 0.99;
+      w.mat.depthWrite = w.mat.opacity > 0.9;
+    }
+    rt.debug.visible = !!this.debugFlags.semantic;
+    // Precarga del lugar contiguo cuando la mascota se acerca a una salida (sin pantalla de carga)
+    if (this.assets) for (const e of world.def.interactionPoints.exits) {
+      if (this.preloaded.has(e.to) || world.distance(world.pet, e.at) > 0.25) continue;
+      this.preloaded.add(e.to);
+      void this.assets.preload(assetsFor(e.to));
+    }
+  }
+
   private updateCamera(dt: number, active: readonly Action[], petPos: THREE.Vector3): void {
     // Encuadre: el prototipo era 4:3; en retrato se aleja un poco y sigue más a la mascota
     const portrait = Math.max(1, Math.sqrt((4 / 3) / Math.max(0.3, this.aspect)));
     const close = this.framing === 'close';
-    const dist = (close ? 0.62 : 1) * Math.min(1.6, portrait) * this.zoom;
-    const outside = (this.envLocation ?? 'room') !== 'room';
-    const followK = close ? 0.85 : outside ? 0.85 : 0.12 + 0.25 * (portrait - 1);
+    // v9: perfil de cámara por lugar (HomeCameraProfile, GardenCameraProfile, ParkCameraProfile)
+    const prof = this.cameraProfile;
+    const dist = (close ? 0.62 : 1) * Math.min(1.6, portrait) * this.zoom * (prof?.distance ?? 1);
+    const followK = close ? 0.85 : prof ? Math.min(0.95, prof.follow + 0.25 * (portrait - 1)) : 0.12 + 0.25 * (portrait - 1);
     const shakeTarget = active.includes('GET_SCARED') ? 1 : (this.source.world.pet.speed || 0) > 1.4 ? 0.35 : 0;
     this.camShake += (shakeTarget - this.camShake) * (1 - Math.exp(-dt * 4));
 
     // Modo cámara: sigue a la mascota (por defecto) o enfoca un objeto (herramientas / Recuerdos)
     const focusObj = this.cameraFocus?.type === 'object' ? this.entities.get(this.cameraFocus.id)?.group.position : null;
     const target = focusObj ?? petPos;
-    const look = this.v2.set(target.x * followK, close ? 0.55 : 0.38, 0.45 + (target.z - 0.45) * followK * 0.6);
+    const look = this.v2.set(target.x * followK, close ? 0.55 : prof?.lookHeight ?? 0.38, 0.45 + (target.z - 0.45) * followK * 0.6);
     // Desplazamiento base de la cámara (el mismo del prototipo) escalado y orbitado
     const off = this.v3.set(0, 3.5 - 0.38, 6.3 - 0.45).multiplyScalar(dist);
     if (close) off.y *= 0.55;
+    else off.y *= prof?.height ?? 1;
     off.applyAxisAngle(THREE.Object3D.DEFAULT_UP, this.orbit);
     this.camera.position.set(
       look.x + off.x + Math.sin(this.t * 31) * 0.012 * this.camShake,
@@ -524,7 +655,9 @@ export class PetScene {
   }
 
   dispose(): void {
+    this.disposed = true;
     if (this.env) disposeEnvironment(this.env);
+    if (this.runtime) disposeEnvRuntime(this.runtime);
     this.pet.dispose();
     this.scene.traverse((o) => {
       if (o instanceof THREE.Mesh && o.geometry && !(o.geometry as THREE.BufferGeometry & { shared?: boolean }).shared) {
@@ -534,6 +667,15 @@ export class PetScene {
     });
     this.renderer.dispose();
   }
+}
+
+// ¿El segmento a→b pasa por la esfera? (oclusión barata, sin raycast contra mallas)
+function segmentSphere(a: THREE.Vector3, b: THREE.Vector3, s: THREE.Sphere): boolean {
+  const abx = b.x - a.x, aby = b.y - a.y, abz = b.z - a.z;
+  const len2 = abx * abx + aby * aby + abz * abz || 1;
+  const t = Math.max(0, Math.min(1, ((s.center.x - a.x) * abx + (s.center.y - a.y) * aby + (s.center.z - a.z) * abz) / len2));
+  const px = a.x + abx * t - s.center.x, py = a.y + aby * t - s.center.y, pz = a.z + abz * t - s.center.z;
+  return t > 0.05 && t < 0.95 && px * px + py * py + pz * pz < s.radius * s.radius * 0.7;
 }
 
 function angDiff(a: number, b: number): number {

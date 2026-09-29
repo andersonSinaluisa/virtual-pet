@@ -49,9 +49,10 @@ export interface SettingsData {
   haptics: boolean;
   fur: boolean; // pelaje por capas (calidad 3D)
   shadows: boolean;
+  graphicsQuality?: 'low' | 'medium' | 'high'; // v9: detalle de escenario (no cambia el juego)
 }
 
-export const DEFAULT_SETTINGS: SettingsData = { masterVolume: 1, petVolume: 0.85, ambientVolume: 0.5, musicVolume: 0.5, uiVolume: 0.6, effectsVolume: 0.8, muted: false, haptics: true, fur: true, shadows: true };
+export const DEFAULT_SETTINGS: SettingsData = { masterVolume: 1, petVolume: 0.85, ambientVolume: 0.5, musicVolume: 0.5, uiVolume: 0.6, effectsVolume: 0.8, muted: false, haptics: true, fur: true, shadows: true, graphicsQuality: 'medium' };
 
 export interface SaveGameV1 {
   saveVersion: 1;

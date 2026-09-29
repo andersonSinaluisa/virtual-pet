@@ -5,7 +5,8 @@
  *     →  camino (aquí)  →  movimiento (MovementSystem)
  *
  * La SNN decide ACERCARSE / EXPLORAR / ALEJARSE. Aquí solo se resuelve CÓMO
- * llegar: rodear obstáculos del lugar (árbol, estanque, banco) y, si el
+ * llegar: rodear obstáculos del lugar (sofá, árbol, estanque: círculos y cajas
+ * de EnvironmentLayouts, en metros) y, si el
  * objetivo está en otra ubicación, ir hasta la salida que la conecta. Cruzar
  * una salida solo es posible si está abierta, es de las que la mascota
  * puede cruzar sola y su cuerpo ya puede estar allí (etapa de vida).
@@ -14,6 +15,7 @@
  */
 import type { Point } from '../simulation/Pet';
 import type { World } from '../simulation/World';
+import { gridStep } from './NavGrid';
 import { LOCATIONS, locationRoute, type LocationId } from './Locations';
 
 export interface NavGoal {
@@ -32,7 +34,6 @@ export interface NavStep {
 }
 
 const EXIT_RADIUS = 0.05;
-const CLEARANCE = 0.035;
 
 export class PetNavigationSystem {
   lastGoal: NavGoal | null = null; // depuración (Show Navigation Target)
@@ -50,8 +51,13 @@ export class PetNavigationSystem {
       if (exit && w.canCross(exit.id)) { target = exit.at; stop = 0.01; exitId = exit.id; final = false; }
       else reachable = false;
     }
-    const detour = reachable ? this.detour(w.pet, target) : null;
-    const step: NavStep = detour ? { waypoint: detour, stop: 0.015, exitId: null, final: false, reachable } : { waypoint: target, stop, exitId, final, reachable };
+    // v9: rejilla de navegación (muebles, árboles, huecos más estrechos que el cuerpo). Un destino
+    // imposible (dentro del sofá, en un bolsillo) se convierte en el punto alcanzable más cercano.
+    let step: NavStep = { waypoint: target, stop, exitId, final, reachable };
+    if (reachable) {
+      const g = gridStep(w.location, w.pet, target, w.bodyRadius);
+      step = g.direct ? { waypoint: g.goal, stop, exitId, final, reachable } : { waypoint: g.waypoint, stop: 0.015, exitId: null, final: false, reachable };
+    }
     this.lastStep = step;
     return step;
   }
@@ -60,33 +66,5 @@ export class PetNavigationSystem {
   atExit(exitId: string): boolean {
     const exit = LOCATIONS[this.world.location].interactionPoints.exits.find((e) => e.id === exitId);
     return !!exit && this.world.distance(this.world.pet, exit.at) < EXIT_RADIUS;
-  }
-
-  // Rodeo simple: si el segmento corta un obstáculo (que no es el destino), pasar por su lado más cercano
-  private detour(from: Point, to: Point): Point | null {
-    const w = this.world, sx = w.scaleX, sy = w.scaleY;
-    for (const ob of LOCATIONS[w.location].obstacles) {
-      const r = ob.r + CLEARANCE;
-      // En el plano escalado (distancias reales)
-      const ax = from.x * sx, ay = from.y * sy, bx = to.x * sx, by = to.y * sy, cx = ob.x * sx, cy = ob.y * sy;
-      const dx = bx - ax, dy = by - ay, len2 = dx * dx + dy * dy;
-      if (len2 < 1e-6) continue;
-      if (Math.hypot(bx - cx, by - cy) < r * Math.max(sx, sy)) continue; // el destino está en el obstáculo (p. ej. ir al árbol)
-      const t = Math.max(0, Math.min(1, ((cx - ax) * dx + (cy - ay) * dy) / len2));
-      const px = ax + dx * t, py = ay + dy * t;
-      const dist = Math.hypot(px - cx, py - cy);
-      const rr = r * Math.max(sx, sy);
-      if (dist >= rr || t <= 0 || t >= 1) continue;
-      // Lado: perpendicular hacia donde queda el punto más cercano del camino
-      let nx = px - cx, ny = py - cy;
-      const n = Math.hypot(nx, ny);
-      if (n < 1e-6) { nx = -dy; ny = dx; } // pasa por el centro: rodear por la izquierda
-      const nn = Math.hypot(nx, ny);
-      const k = (rr + 0.04) / nn;
-      const wx = (cx + nx * k) / sx, wy = (cy + ny * k) / sy;
-      const b = LOCATIONS[w.location].navigationBounds;
-      return { x: Math.max(b.minX, Math.min(b.maxX, wx)), y: Math.max(b.minY, Math.min(b.maxY, wy)) };
-    }
-    return null;
   }
 }

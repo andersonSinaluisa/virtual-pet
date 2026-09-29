@@ -120,7 +120,7 @@ export const LOCATIONS: Readonly<Record<LocationId, LocationDef>> = {
     furniture: [
       { kind: 'bed', at: { x: 0.15, y: 0.18 }, fixed: true },
       { kind: 'bowl', at: { x: 0.78, y: 0.22 }, fixed: true },
-      { kind: 'water', at: { x: 0.93, y: 0.45 }, fixed: true },
+      { kind: 'water', at: { x: 0.9, y: 0.3 }, fixed: true }, // v9: junto a la comida (el sofá y la lámpara ocupan el lado derecho)
       { kind: 'tent', at: { x: 0.08, y: 0.78 }, fixed: true },
     ],
     availableObjects: ['ball', 'teddy', 'mysteryBox', 'mirror', 'cactus', 'gift', 'duck', 'mushroom', 'yoyo', 'crystal', 'shell', 'puzzle', 'rope', 'treat'],

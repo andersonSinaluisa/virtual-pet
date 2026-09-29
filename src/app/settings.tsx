@@ -17,6 +17,7 @@ import { Text } from '@/components/ui/Text';
 import { SessionController } from '@/services/SessionController';
 import { useStore } from '@/state/createStore';
 import { petStore, settingsStore } from '@/state/stores';
+import { ENV_PACKS } from '@/render3d/EnvironmentAssetInfo';
 import { colors, spacing } from '@/theme';
 
 function Row({ icon, label, hint, children }: { icon: IconName; label: string; hint?: string; children: ReactNode }) {
@@ -75,12 +76,24 @@ export default function Settings() {
         <Card style={styles.card}>
           <Row icon="paw" label="Pelaje detallado" hint="Más bonito, más exigente para el móvil"><Switch value={s.fur} onValueChange={(v) => set({ fur: v })} {...sw} /></Row>
           <Row icon="light" label="Sombras suaves"><Switch value={s.shadows} onValueChange={(v) => set({ shadows: v })} {...sw} /></Row>
-          <Text variant="bodyXs" color={colors.textSubtle}>Los cambios de calidad se aplican al volver a abrir la escena.</Text>
+          <Row icon="spa" label="Detalle de los escenarios" hint="Plantas que se mueven, hierba y luces. No cambia el juego">
+            <View style={styles.seg}>
+              {(['low', 'medium', 'high'] as const).map((q) => (
+                <SoftButton key={q} label={q === 'low' ? 'Bajo' : q === 'medium' ? 'Medio' : 'Alto'} tone={(s.graphicsQuality ?? 'medium') === q ? 'lavender' : undefined} onPress={() => set({ graphicsQuality: q })} />
+              ))}
+            </View>
+          </Row>
+          <Text variant="bodyXs" color={colors.textSubtle}>El pelaje y las sombras se aplican al volver a abrir la escena; el detalle de los escenarios, al momento.</Text>
         </Card>
         <Card style={styles.card}>
           <Text variant="labelLg">Créditos de sonido</Text>
           <Text variant="bodyXs" color={colors.textMuted}>Las voces de las mascotas son grabaciones reales de animales. La mayoría son de dominio público (CC0): Freesound, Kenney y Benjamin Burnes. Estas requieren atribución:</Text>
           {attributionLines().map((l) => <Text key={l} variant="bodyXs" color={colors.textSubtle}>{l}</Text>)}
+        </Card>
+        <Card style={styles.card}>
+          <Text variant="labelLg">Créditos de escenarios</Text>
+          <Text variant="bodyXs" color={colors.textMuted}>Los muebles y la naturaleza son modelos de dominio público (CC0). No exigen atribución, pero se la damos con gusto:</Text>
+          {ENV_CREDITS.map((l) => <Text key={l} variant="bodyXs" color={colors.textSubtle}>{l}</Text>)}
         </Card>
         {__DEV__ ? <SoftButton label="Herramientas de desarrollo" icon="dev" tone="lavender" onPress={() => router.push('/dev')} /> : null}
         <SecondaryButton label={`Empezar de nuevo`} icon="trash" onPress={reset} />
@@ -97,4 +110,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   stepVal: { width: 44, textAlign: 'center' },
+  seg: { flexDirection: 'row', gap: 4 },
 });
+
+const ENV_CREDITS = Object.values(ENV_PACKS).map((p) => `${p.name} · ${p.creator} · ${p.license} · ${p.source}`);

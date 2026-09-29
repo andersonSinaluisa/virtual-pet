@@ -316,6 +316,8 @@ export class GameSession {
     this.plasticity.stageMultiplier = this.growth.plasticityMultiplier;
     applyPhysiology(this.config, this.physiology, { needs: c.needs, speed: c.speed });
     this.sim.actionSystem.gate = (a) => this.growth.gate(a);
+    // v9: el tamaño del cuerpo (colisión con muebles) sigue al crecimiento, como el modelo 3D
+    this.world.bodyScale = c.visual.scale * this.growth.state.modifiers.size;
   }
 
   // (Re)conecta la plasticidad al cerebro actual (tras construir o reconstruir la red)

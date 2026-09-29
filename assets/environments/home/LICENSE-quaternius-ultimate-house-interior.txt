@@ -1,0 +1,9 @@
+Ultimate House Interior Pack — Quaternius
+Source: https://quaternius.com/packs/ultimatehomeinterior.html
+Mirror used for download (per-model GLB): https://poly.pizza/bundle/Ultimate-House-Interior-Pack-2SXnFbwFzm
+License: CC0 1.0 Universal (public domain) — https://creativecommons.org/publicdomain/zero/1.0/
+Quaternius FAQ: "these assets can be used for free without the need for attribution in commercial,
+educational, and personal projects." Attribution is not required; credit is appreciated.
+Poly Pizza lists every model of this bundle as "Licence: CC0 1.0".
+Files in this folder are unmodified originals (renamed to lowercase). Runtime colour/material
+adjustments are applied in code (src/render3d/EnvironmentMaterials.ts), not in the files.

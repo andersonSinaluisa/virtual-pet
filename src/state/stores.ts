@@ -12,6 +12,7 @@
  *
  * Nunca se guardan objetos THREE ni la simulación en estos stores.
  */
+import type { SceneMetrics } from '@/render3d/PetScene';
 import type { AnyGameView } from '@/core/games';
 import type { Discovery } from '@/core/memory/types';
 import { DEFAULT_SETTINGS, type SettingsData } from '@/core/persistence/SaveGame';
@@ -64,12 +65,15 @@ export interface WorldDebugState {
   attention: boolean;
   navigation: boolean;
   labels: boolean; // novedad / familiaridad sobre cada objeto
+  semantic?: boolean; // v9: caminable, obstáculos, interacción, aparición, transiciones
 }
 
 export const devStore = createStore<{
   running: boolean; speed: number; debugScene: boolean; clockSpeed: number; growthPreview: number | null;
   world: WorldDebugState; inspectId: number | null; perf: { fps: number; frameMs: number; tickMs: number } | null; perfMeter: boolean;
+  sceneMetrics: SceneMetrics | null; // v9: Environment Lab (renderer + constructor de escenario)
 }>({
   running: true, speed: 1, debugScene: false, clockSpeed: 1, growthPreview: null,
-  world: { fov: false, hearing: false, perceived: false, attention: false, navigation: false, labels: false }, inspectId: null, perf: null, perfMeter: false,
+  world: { fov: false, hearing: false, perceived: false, attention: false, navigation: false, labels: false, semantic: false }, inspectId: null, perf: null, perfMeter: false,
+  sceneMetrics: null,
 });

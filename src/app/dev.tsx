@@ -16,6 +16,7 @@ import { RoutineLab } from '@/components/dev/RoutineLab';
 import { GrowthLab } from '@/components/dev/GrowthLab';
 import { PetAudioLab } from '@/components/dev/PetAudioLab';
 import { WorldInspector } from '@/components/dev/WorldInspector';
+import { EnvironmentLab } from '@/components/dev/EnvironmentLab';
 import { IconButton, SoftButton, StrongButton } from '@/components/ui/Buttons';
 import { Squishable } from '@/components/ui/Squishable';
 import { Card } from '@/components/ui/Surfaces';
@@ -81,6 +82,7 @@ export default function DevTools() {
           <SoftButton label="Inspector de neuronas" icon="brain" onPress={() => router.push({ pathname: '/brain', params: { mode: 'tech' } })} />
         </Card>
 
+        <EnvironmentLab />
         <WorldInspector />
         <LearningLab />
         <RoutineLab />

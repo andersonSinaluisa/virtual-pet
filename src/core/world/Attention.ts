@@ -164,7 +164,8 @@ export class TargetResolver {
     const opts: { point: Point; location: LocationId; exitId: string | null; weight: number }[] = [];
     const b = loc.navigationBounds;
     for (let i = 0; i < 3; i++) {
-      const p = { x: b.minX + 0.06 + rng() * (b.maxX - b.minX - 0.12), y: b.minY + 0.08 + rng() * (b.maxY - b.minY - 0.16) };
+      // v9: un punto al que el cuerpo pueda llegar (no dentro del sofá ni pegado a la chimenea)
+      const p = w.freePoint({ x: b.minX + 0.06 + rng() * (b.maxX - b.minX - 0.12), y: b.minY + 0.08 + rng() * (b.maxY - b.minY - 0.16) }, w.bodyRadius + 0.08);
       const zone = w.zoneAt(p);
       const unknown = zone ? 1 - k.zoneFamiliarity(w.location, zone) : 0.5;
       opts.push({ point: p, location: w.location, exitId: null, weight: 1 + unknown });
