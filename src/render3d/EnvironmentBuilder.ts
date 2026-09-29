@@ -65,7 +65,7 @@ function roomShell(env: EnvRuntime): void {
   floor.position.set(0, -0.15, 0.1); floor.receiveShadow = true; floor.name = 'Floor';
   // Tarimas: franjas sutiles (una sola malla)
   const planks = new THREE.Mesh(new THREE.PlaneGeometry(w + 0.9, d + 0.8, 1, 14), new THREE.MeshStandardMaterial({ color: '#E2BF9C', roughness: 1, wireframe: true, transparent: true, opacity: 0.18 }));
-  planks.rotation.x = -Math.PI / 2; planks.position.set(0, 0.002, 0.1);
+  planks.rotation.x = -Math.PI / 2; planks.position.set(0, 0.001, 0.1);
   const wallMat = std('#F7E6E2', 1), trimMat = std('#FFF7F0', 0.8);
   const H = 2.6, back = -d / 2 - 0.12;
   const backWall = new THREE.Mesh(new THREE.BoxGeometry(w + 0.9, H, 0.2), wallMat);
@@ -187,7 +187,9 @@ function gardenFence(env: EnvRuntime, assets: EnvironmentAssetManager, placed: T
 // ---------------- Props ----------------
 function placeProp(env: EnvRuntime, loc: LocationId, p: PropPlacement, obj: THREE.Object3D): void {
   const { X, Z } = toXZ(loc, p.at.x, p.at.y);
-  obj.position.set(X, p.elev ?? 0, Z);
+  // Piezas planas (alfombras, caminos) 1 cm sobre el suelo: si su base coincide con él, parpadean (z-fighting)
+  const flat = p.semantic === 'RUG' || p.semantic === 'PATH';
+  obj.position.set(X, p.elev ?? (flat ? 0.01 : 0), Z);
   obj.rotation.y = THREE.MathUtils.degToRad(p.rot ?? 0);
   obj.scale.multiplyScalar(p.scale ?? 1);
   obj.name = `Prop:${p.id}`;

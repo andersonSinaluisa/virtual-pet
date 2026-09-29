@@ -77,6 +77,9 @@ export interface EnvironmentLayout {
   petSpawns: readonly Point[];
 }
 
+// Alfombras y caminos: 1 cm sobre el suelo (si su base coincide con el suelo, parpadean: z-fighting)
+const RUG_LIFT = 0.01;
+
 // ---------------- HOME 2.0 ----------------
 // Pared del fondo en y≈0, izquierda x≈0, derecha x≈1; el frente queda abierto hacia la cámara.
 const HOME: EnvironmentLayout = {
@@ -87,8 +90,8 @@ const HOME: EnvironmentLayout = {
     { id: 'window', asset: 'home/window_large', at: { x: 0.5, y: -0.03 }, scale: 1.6, elev: 0.85, class: 'SEMANTIC', semantic: 'WINDOW', binding: { zone: 'WINDOW_ZONE' }, label: 'la ventana' },
     { id: 'curtains', asset: 'home/curtains_double', at: { x: 0.5, y: -0.02 }, scale: 1.25, elev: 0.25, class: 'DECORATIVE', sway: 0.015 },
     { id: 'door', asset: 'home/door', at: { x: 0.08, y: -0.03 }, class: 'SEMANTIC', semantic: 'DOOR', binding: { exitId: 'room>garden' }, label: 'la puerta del jardín' },
-    { id: 'bedRug', asset: 'home/rug', at: { x: 0.21, y: 0.2 }, rot: 90, scale: 0.9, class: 'DECORATIVE', semantic: 'RUG' },
-    { id: 'playRug', asset: 'home/round_rug', at: { x: 0.55, y: 0.68 }, scale: 1.35, class: 'DECORATIVE', semantic: 'RUG' },
+    { id: 'bedRug', asset: 'home/rug', at: { x: 0.21, y: 0.2 }, rot: 90, scale: 0.9, elev: RUG_LIFT, class: 'DECORATIVE', semantic: 'RUG' },
+    { id: 'playRug', asset: 'home/round_rug', at: { x: 0.55, y: 0.68 }, scale: 1.35, elev: RUG_LIFT, class: 'DECORATIVE', semantic: 'RUG' },
     { id: 'nightStand', asset: 'home/night_stand', at: { x: 0.33, y: 0.04 }, class: 'INTERACTIVE', semantic: 'TABLE', footprint: { kind: 'box', w: 0.4, d: 0.4 }, label: 'la mesilla' },
     { id: 'bedLamp', asset: 'home/table_lamp', at: { x: 0.33, y: 0.04 }, elev: 0.36, class: 'SEMANTIC', semantic: 'LAMP', binding: { lamp: true }, label: 'la lámpara' },
     { id: 'drawer', asset: 'home/drawer', at: { x: 0.72, y: 0.05 }, class: 'INTERACTIVE', semantic: 'SHELF', footprint: { kind: 'box', w: 1.1, d: 0.45 }, label: 'la cómoda' },

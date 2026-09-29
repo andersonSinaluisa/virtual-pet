@@ -18,7 +18,8 @@ export function RewardButton({ style }: { style?: object }) {
   const rewardable = useStore(petStore, (p) => p?.rewardable ?? null);
   if (!rewardable) return null;
   return (
-    <Animated.View entering={ZoomIn.springify().damping(14)} exiting={ZoomOut.duration(150)} style={style}>
+    // Tamaño fijo: nunca se estira para ocupar el alto del contenedor (antes crecía en el panel de "Trae la pelota")
+    <Animated.View entering={ZoomIn.springify().damping(14)} exiting={ZoomOut.duration(150)} style={[styles.wrap, style]}>
       <Squishable onPress={() => SessionController.rewardPlayer()} accessibilityLabel="Recompensar lo que acaba de hacer" style={styles.btn}>
         <Text variant="labelLg" color={colors.onPrimaryContainer}>❤️ Recompensar</Text>
       </Squishable>
@@ -27,5 +28,6 @@ export function RewardButton({ style }: { style?: object }) {
 }
 
 const styles = StyleSheet.create({
-  btn: { paddingHorizontal: 18, paddingVertical: 12, borderRadius: radius.full, backgroundColor: colors.primaryContainer, ...shadows.primaryButton },
+  wrap: { flexGrow: 0, flexShrink: 0, alignSelf: 'center' },
+  btn: { height: 48, paddingHorizontal: 18, justifyContent: 'center', alignItems: 'center', borderRadius: radius.full, backgroundColor: colors.primaryContainer, ...shadows.primaryButton },
 });
