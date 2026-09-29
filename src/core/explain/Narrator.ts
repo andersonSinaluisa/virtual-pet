@@ -39,6 +39,14 @@ function capital(s: string): string {
   return s ? s[0].toUpperCase() + s.slice(1) : s;
 }
 
+function needActionThought(world: World, kind: 'water' | 'food'): string {
+  const pet = world.pet;
+  const src = kind === 'water' ? world.firstOfType('water') : world.nearest(world.foodSources());
+  if (!src || src.amount <= 0) return kind === 'water' ? 'Mi bebedero está vacío… ¿me pones agua?' : 'Mi plato está vacío… ¿me das de comer?';
+  if (world.distance(pet, src) > 0.12) return kind === 'water' ? 'Tengo sed… voy a por agua.' : 'Tengo hambre… voy a comer.';
+  return kind === 'water' ? 'Qué rica el agua fresquita.' : 'Mmm… ¡comida!';
+}
+
 export function thoughtFor(active: readonly Action[], world: World, name: string): string {
   const focus = world.getObject(world.focusObjectId);
   const carried = world.getObject(world.pet.carrying);
@@ -49,6 +57,9 @@ export function thoughtFor(active: readonly Action[], world: World, name: string
   const t = world.attentionTarget;
   if (!focus && t?.type === 'sound' && (A.has('LOOK_AT_OBJECT') || A.has('INVESTIGATE'))) return '¿Qué ha sido eso?';
   if (A.has('WALK') && world.location !== 'room' && active.length === 1) return world.location === 'park' ? '¡Cuánto espacio!' : 'Qué bien huele aquí fuera.';
+  // v8: comer/beber se narra según lo que pasa DE VERDAD (en camino, recipiente vacío, o comiendo/bebiendo)
+  if (A.has('DRINK') && !A.has('GET_SCARED') && !A.has('HIDE') && !A.has('CRY')) return needActionThought(world, 'water');
+  if (A.has('EAT') && !A.has('GET_SCARED') && !A.has('HIDE') && !A.has('CRY')) return needActionThought(world, 'food');
   for (const [action, fn] of THOUGHTS) if (A.has(action)) return fn(label, name);
   return needThought(world.pet.snapshot());
 }

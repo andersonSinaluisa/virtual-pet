@@ -119,7 +119,7 @@ export interface BrainConfig extends BrainWeightsData {
   plasticity: PlasticityConfig;
 }
 
-export const BRAIN_CONFIG_VERSION = 6;
+export const BRAIN_CONFIG_VERSION = 7;
 
 // v5: neuronas de reloj (código de población en anillo) en el orden de CLOCK_PHASES_HOURS
 export const CLOCK_SENSORS = ['time00', 'time04', 'time08', 'time12', 'time16', 'time20'] as const satisfies readonly SensorKey[];
@@ -229,8 +229,9 @@ const BASE_BRAIN_CONFIG: BrainConfig = {
    * Cada fila es un sensor; cada clave, un circuito destino. Lo que no aparece vale 0.
    */
   sensorToCircuit: {
-    hunger: { feedingCircuit: 0.7, distressCircuit: 0.25, playCircuit: -0.2, joyCircuit: -0.3 },
-    thirst: { drinkingCircuit: 0.7, distressCircuit: 0.25, joyCircuit: -0.3 },
+    // v7: una necesidad urgente frena la curiosidad y el juego (como ya hacía el cansancio)
+    hunger: { feedingCircuit: 0.7, distressCircuit: 0.25, playCircuit: -0.2, joyCircuit: -0.3, curiosityCircuit: -0.2 },
+    thirst: { drinkingCircuit: 0.7, distressCircuit: 0.25, joyCircuit: -0.3, curiosityCircuit: -0.25, playCircuit: -0.25 },
     fatigue: { restCircuit: 1.0, activityCircuit: -0.35, playCircuit: -0.4, followCircuit: -0.3, curiosityCircuit: -0.2 },
     boredom: { playCircuit: 0.6, activityCircuit: 0.35, lonelinessCircuit: 0.2, curiosityCircuit: 0.2 },
     affectionNeed: { lonelinessCircuit: 0.6, socialCircuit: 0.3, followCircuit: 0.25, distressCircuit: 0.25, joyCircuit: -0.3 },
@@ -288,8 +289,9 @@ const BASE_BRAIN_CONFIG: BrainConfig = {
    * MATRIZ Circuitos → Acciones
    */
   circuitToAction: {
-    feedingCircuit: { EAT: 0.9, DRINK: -0.2, SLEEP: -0.2 },
-    drinkingCircuit: { DRINK: 0.9, EAT: -0.2, SLEEP: -0.2 },
+    // v7: ir a comer/beber compite con distraerse por el camino
+    feedingCircuit: { EAT: 0.9, DRINK: -0.2, SLEEP: -0.2, INVESTIGATE: -0.25, PICK_UP_OBJECT: -0.25, PLAY: -0.2 },
+    drinkingCircuit: { DRINK: 0.9, EAT: -0.2, SLEEP: -0.2, INVESTIGATE: -0.3, PICK_UP_OBJECT: -0.3, PLAY: -0.25 },
     restCircuit: { REST: 0.9, SLEEP: 0.8, RUN: -0.8, PLAY: -0.5, EXPLORE: -0.5, WALK: -0.4, DANCE: -0.5, EAT: -0.3 },
     activityCircuit: { WALK: 0.8, EXPLORE: 0.6, RUN: 0.4, REST: -0.4, SLEEP: -0.3, INVESTIGATE: 0.2 },
     playCircuit: { PLAY: 0.9, RUN: 0.4, PICK_UP_OBJECT: 0.6, DANCE: 0.4, MAKE_SOUND: 0.3, EXPLORE: 0.2, SLEEP: -0.2 },
@@ -441,6 +443,41 @@ export function getSensorWeight(config: BrainWeightsData, from: SensorKey, to: C
 
 export function getCircuitWeight(config: BrainWeightsData, from: CircuitKey, to: Action): number {
   return config.circuitToAction[from]?.[to] ?? 0;
+}
+
+/*
+ * CONEXIONES NUEVAS DEL GENOMA para mascotas guardadas con una versión anterior.
+ * El save es la verdad para las filas que conoce (pesos aprendidos), así que una
+ * conexión innata nueva no llegaría nunca a una mascota existente. Aquí se añaden
+ * SOLO las que faltan, con su valor innato; nada aprendido se sobrescribe.
+ */
+export const GENOME_ADDITIONS: readonly { version: number; sensor: readonly [SensorKey, CircuitKey][]; circuit: readonly [CircuitKey, Action][] }[] = [
+  {
+    // v7: la sed y el hambre frenan la curiosidad y el juego; ir a comer/beber compite con distraerse
+    version: 7,
+    sensor: [['hunger', 'curiosityCircuit'], ['thirst', 'curiosityCircuit'], ['thirst', 'playCircuit']],
+    circuit: [
+      ['feedingCircuit', 'INVESTIGATE'], ['feedingCircuit', 'PICK_UP_OBJECT'], ['feedingCircuit', 'PLAY'],
+      ['drinkingCircuit', 'INVESTIGATE'], ['drinkingCircuit', 'PICK_UP_OBJECT'], ['drinkingCircuit', 'PLAY'],
+    ],
+  },
+];
+
+export function applyGenomeAdditions(config: BrainWeightsData, fromVersion: number): number {
+  const base = baseBrainConfig();
+  let added = 0;
+  for (const g of GENOME_ADDITIONS) {
+    if (g.version <= fromVersion) continue;
+    for (const [from, to] of g.sensor) {
+      const w = base.sensorToCircuit[from]?.[to];
+      if (w !== undefined && config.sensorToCircuit[from]?.[to] === undefined) { setSensorWeight(config, from, to, w); added++; }
+    }
+    for (const [from, to] of g.circuit) {
+      const w = base.circuitToAction[from]?.[to];
+      if (w !== undefined && config.circuitToAction[from]?.[to] === undefined) { setCircuitWeight(config, from, to, w); added++; }
+    }
+  }
+  return added;
 }
 
 export function setSensorWeight(config: BrainWeightsData, from: SensorKey, to: CircuitKey, weight: number): void {

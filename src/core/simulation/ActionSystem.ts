@@ -41,6 +41,14 @@ const SLEEP_RECOVERY = 0.0045;
 // Ticks de investigación de cerca con los que la caja cede y se abre (igual que el minijuego)
 export const BOX_OPENS_AT = 8; // fracción de la presión de sueño que se recupera por minuto dormido en la cama
 
+// Tasa de disparo con ventana de ~20 ticks (las salidas de necesidad disparan cada 12–28 ticks)
+const DRIVE_DECAY = 0.95;
+// v8: conductas de necesidad con histéresis sobre la tasa (medido: docs/network-tuning.md)
+const NEED_DRIVE: Partial<Record<Action, { start: number; keep: number }>> = {
+  EAT: { start: 1.6, keep: 0.6 },
+  DRINK: { start: 1.6, keep: 0.6 },
+};
+
 export class ActionSystem {
   hold: Partial<Record<Action, number>> = {}; // acción → ticks restantes
   status: Partial<Record<Action, string>> = {}; // acción → lo que está pasando físicamente
@@ -53,6 +61,7 @@ export class ActionSystem {
   }
 
   reset(): void {
+    for (const a of Object.keys(this.drive) as Action[]) delete this.drive[a];
     this.hold = {};
     this.status = {};
     this.carryTimer = 0;
@@ -62,10 +71,29 @@ export class ActionSystem {
   // se ejecuta su forma posible (RUN → WALK) o nada. No hay consecuencia de lo que no ocurrió.
   gate: ((action: Action) => Action | null) | null = null;
 
+  // v8: MOTIVACIÓN por tasa de disparo (código de tasa): cuánto insiste la SNN en cada acción
+  // en los últimos ticks. El cuerpo va hacia el destino de la acción que más insiste, no hacia
+  // el de la última que disparó (con "la más reciente", la pelota secuestraba el camino al agua).
+  readonly drive: Partial<Record<Action, number>> = {};
+
   trigger(actions: readonly FiredAction[]): void {
+    for (const a of Object.keys(this.drive) as Action[]) {
+      const v = (this.drive[a] ?? 0) * DRIVE_DECAY;
+      if (v < 0.01) delete this.drive[a]; else this.drive[a] = v;
+    }
     for (const { action } of actions) {
       const doable = this.gate ? this.gate(action) : action;
-      if (doable) this.hold[doable] = Math.max(this.hold[doable] ?? 0, ACTION_INFO[doable].hold);
+      if (!doable) continue;
+      this.drive[doable] = (this.drive[doable] ?? 0) + 1;
+      if (NEED_DRIVE[doable]) continue; // las conductas de necesidad se gobiernan por su tasa (abajo)
+      this.hold[doable] = Math.max(this.hold[doable] ?? 0, ACTION_INFO[doable].hold);
+    }
+    // Comer/beber: EMPEZAR pide insistencia (tasa alta = necesidad real, no un spike suelto);
+    // SEGUIR basta con que la tasa no caiga; al saciarse la tasa baja y se detiene sola
+    for (const a of Object.keys(NEED_DRIVE) as Action[]) {
+      const { start, keep } = NEED_DRIVE[a]!, d = this.drive[a] ?? 0;
+      const engaged = (this.hold[a] ?? 0) > 0;
+      if ((!engaged && d >= start) || (engaged && d >= keep)) this.hold[a] = Math.max(this.hold[a] ?? 0, 2);
     }
   }
 
@@ -87,10 +115,10 @@ export class ActionSystem {
     for (const action of active) {
       const from = ctx.intents.length;
       this.status[action] = this.handlers[action](ctx);
-      // prioridad de movimiento: la acción disparada más recientemente (más "hold" restante, relativo a su duración)
+      // prioridad de movimiento: la motivación (tasa de disparo) de la acción; desempata la más reciente
       for (let i = from; i < ctx.intents.length; i++) {
         const it = ctx.intents[i];
-        if (it.kind === 'seek' && it.priority === undefined) it.priority = (this.hold[action] ?? 0) / ACTION_INFO[action].hold;
+        if (it.kind === 'seek' && it.priority === undefined) it.priority = (this.drive[action] ?? 0) + 0.01 * (this.hold[action] ?? 0) / ACTION_INFO[action].hold;
       }
     }
     for (const action of active) this.hold[action] = (this.hold[action] ?? 0) - 1;

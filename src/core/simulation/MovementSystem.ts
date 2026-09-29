@@ -48,6 +48,7 @@ export class MovementSystem {
         const dx = (pet.x - it.from.x) * sx, dy = (pet.y - it.from.y) * sy, d = Math.hypot(dx, dy) || 1;
         vx += (dx / d) * it.speed; vy += (dy / d) * it.speed;
       } else if (it.kind === 'wander') {
+        if (seek) continue; // v8: quien va a algún sitio no deambula por el camino
         pet.heading = (pet.heading ?? rng() * Math.PI * 2) + (rng() - 0.5) * 0.8;
         vx += Math.cos(pet.heading) * it.speed; vy += Math.sin(pet.heading) * it.speed;
       } else if (it.kind === 'brake') {

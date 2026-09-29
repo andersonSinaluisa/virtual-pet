@@ -14,7 +14,7 @@
  */
 import type { Action } from '../brain/Actions';
 import {
-  BRAIN_CONFIG_VERSION, cloneBrainConfig, createBrainConfig, type BrainConfig, type PresetKey, type SensorKey,
+  applyGenomeAdditions, BRAIN_CONFIG_VERSION, cloneBrainConfig, createBrainConfig, type BrainConfig, type PresetKey, type SensorKey,
 } from '../brain/BrainConfig';
 import { buildDecisionTrace, EXPLAINED_ACTIONS, type DecisionTrace } from '../explain/DecisionTrace';
 import { NATURAL_KINDS, RewardBaseline, rewardFor, threatFor } from '../learning/RewardModel';
@@ -347,6 +347,9 @@ export class GameSession {
     const weights = importWeights(config, save.brain.weights);
     const initial = createBrainConfig(save.profile.preset);
     importWeights(initial, save.brain.initialWeights ?? save.brain.weights);
+    // Genoma más nuevo que el save: se añaden las conexiones innatas que faltan (lo aprendido se conserva)
+    applyGenomeAdditions(config, save.brain.configVersion);
+    applyGenomeAdditions(initial, save.brain.configVersion);
     const s = new GameSession(save.profile, config, opts, new PetMemory(save.memory), initial);
     s.growth = new GrowthSystem(JSON.parse(JSON.stringify(save.growth)) as SaveGame['growth']);
     s.attachWorld();

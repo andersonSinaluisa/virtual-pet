@@ -81,6 +81,10 @@ export interface SimConfig {
  */
 export type PhysiologyProfile = 'app' | 'day';
 export const DAY_SCALE_NEEDS = 0.35;
+// Perfil 'day' en valores absolutos (medido en docs/routine-results.md): no cambia si se reequilibra la app
+const DAY_NEEDS: Partial<Record<PetStat, number>> = {
+  hunger: 0.002 * DAY_SCALE_NEEDS, thirst: 0.0025 * DAY_SCALE_NEEDS, boredom: 0.002 * DAY_SCALE_NEEDS, affection: -0.0012 * DAY_SCALE_NEEDS,
+};
 
 export interface BodyModifiers {
   needs: Partial<Record<PetStat, number>>; // × deriva (etapa de vida)
@@ -92,11 +96,10 @@ const NO_BODY_MODIFIERS: BodyModifiers = { needs: {}, speed: 1 };
 // Recalcula el cuerpo desde la base: perfil de fisiología × moduladores de etapa (nunca acumula)
 export function applyPhysiology(cfg: SimConfig, profile: PhysiologyProfile, body: BodyModifiers = NO_BODY_MODIFIERS): void {
   const base = createSimConfig();
-  const k = profile === 'day' ? DAY_SCALE_NEEDS : 1;
   for (const s of PET_STATS) {
     const b = base.pet.drift[s];
     if (b === undefined) continue;
-    const scaled = s === 'hunger' || s === 'thirst' || s === 'boredom' || s === 'affection' ? b * k : b;
+    const scaled = profile === 'day' ? (DAY_NEEDS[s] ?? b) : b;
     cfg.pet.drift[s] = scaled * (body.needs[s] ?? 1);
   }
   cfg.movement.baseSpeed = base.movement.baseSpeed * body.speed;
@@ -118,7 +121,8 @@ export function createSimConfig(overrides: { rng?: Rng; ambientRng?: Rng } = {})
       // Cambio por tick sin que ocurra nada.
       drift: {
         // v5: fatigue 0.0012 → 0.0008 (ver ActionSystem.SLEEP y docs/routine-results.md)
-        hunger: 0.002, thirst: 0.0025, fatigue: 0.0008, boredom: 0.002,
+        // v8: sed 0.0025 → 0.0008 (a 3 ticks/s se llenaba en ~2 min y buscaba agua todo el rato)
+        hunger: 0.002, thirst: 0.0008, fatigue: 0.0008, boredom: 0.002,
         affection: -0.0012, energy: 0.001, // la energía se recupera sola si no gasta
       },
       fearDecay: 0.95,
