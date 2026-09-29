@@ -22,11 +22,13 @@ const MILESTONE_TEXT: Record<MilestoneType, (name: string, subject: string | nul
   FIRST_EXPLORE: (n) => `${n} exploró la habitación por primera vez.`,
   FIRST_FETCH: (n) => `${n} te trajo la pelota por primera vez.`,
   GREW: (n, s, species) => `${n} creció: ahora es ${s ? stageLabel(s as LifeStage, species).toLowerCase() : 'más grande'}.`,
+  FIRST_OUTING: (n) => `${n} salió al jardín por primera vez.`,
+  FIRST_PARK: (n) => `${n} conoció el parque.`,
 };
 
 export const MILESTONE_EMOJI: Record<MilestoneType, string> = {
   ARRIVED: '🏠', FIRST_PLAY: '⚽', FIRST_SLEEP_ALONE: '🌙', FIRST_DISCOVERY: '✨', FIRST_LEARNED_ASSOCIATION: '🧠',
-  FIRST_HABIT: '🕰️', FIRST_EXPLORE: '🧭', FIRST_FETCH: '🎾', GREW: '🌱',
+  FIRST_HABIT: '🕰️', FIRST_EXPLORE: '🧭', FIRST_FETCH: '🎾', GREW: '🌱', FIRST_OUTING: '🌿', FIRST_PARK: '🌳',
 };
 
 export function milestoneText(m: GrowthMilestone, name: string, species: SpeciesKey): string {

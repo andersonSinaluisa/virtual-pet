@@ -45,6 +45,7 @@ export default function RootLayout() {
               <Stack.Screen name="memory/[id]" options={{ presentation: 'modal' }} />
               <Stack.Screen name="away" options={{ presentation: 'transparentModal', animation: 'fade' }} />
               <Stack.Screen name="settings" options={{ presentation: 'modal' }} />
+              <Stack.Screen name="world" options={{ presentation: 'modal' }} />
               <Stack.Screen name="dev" options={{ presentation: 'modal' }} />
             </Stack.Protected>
           </Stack>

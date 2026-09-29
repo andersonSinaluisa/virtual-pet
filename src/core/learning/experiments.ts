@@ -96,6 +96,8 @@ export async function evaluatePreference(source: GameSession, kinds: [ItemKind, 
     resetNeeds(s);
     const pet = s.world.pet;
     pet.x = 0.5; pet.y = 0.5; pet.carrying = null;
+    // v7 (hay campo de visión): la mascota empieza mirando hacia delante, con los dos objetos a la vista
+    pet.orientation = Math.PI / 2;
     const [left, right] = t % 2 === 0 ? kinds : [kinds[1], kinds[0]];
     const objs = [s.world.placeItem(left, { x: 0.32, y: 0.66 }), s.world.placeItem(right, { x: 0.68, y: 0.66 })];
     objs.forEach((o) => { o.novelty = 0.5; });

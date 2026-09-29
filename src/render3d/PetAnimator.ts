@@ -7,6 +7,9 @@
  *   ARMS        none | wave | raise | reach | hold | dance | cover
  *   TAIL        idle | wag | slowWag | fastWag | down | scared | sleeping
  *   SPECIAL     varios a la vez: jump, tremble, dance, sniff, lookAround, munch, lap, bark, alert
+ *               + v8 (voz): vocal (levanta la cabeza al vocalizar), purr, relaxEars, wiggle
+ *   EVENTOS     onFootContact (cada pie que toca el suelo, según la fase del paso) y
+ *               onLand (fin de un salto): los usa el FoleySystem para sincronizar pasos
  *   EXPRESSION  delegada a PetExpressions
  *
  * Cada estado aporta desplazamientos a una "pose" con un peso que sube/baja
@@ -29,7 +32,7 @@ type Pose = Record<PoseKey, number>;
 export type Locomotion = 'idle' | 'walk' | 'run' | 'sleep' | 'rest' | 'crouch';
 export type Arms = 'none' | 'wave' | 'raise' | 'reach' | 'hold' | 'dance' | 'cover';
 export type Tail = 'idle' | 'wag' | 'slowWag' | 'fastWag' | 'down' | 'scared' | 'sleeping';
-export type Special = 'jump' | 'tremble' | 'dance' | 'sniff' | 'lookAround' | 'munch' | 'lap' | 'bark' | 'alert';
+export type Special = 'jump' | 'tremble' | 'dance' | 'sniff' | 'lookAround' | 'munch' | 'lap' | 'bark' | 'alert' | 'vocal' | 'purr' | 'relaxEars' | 'wiggle';
 type ChannelName = 'locomotion' | 'arms' | 'tail' | 'special';
 
 interface Channel {
@@ -56,6 +59,11 @@ export class PetAnimator {
   // v6: estilo por edad (misma acción, distinto cuerpo): lo fija GrowthVisualController
   private style: AnimationStyle = { stepRate: 1, bounce: 1, wobble: 0, curl: 0 };
   private readonly tmp = new THREE.Vector3();
+  // v8: eventos de contacto (audio sincronizado con la animación)
+  onFootContact: ((run: boolean) => void) | null = null;
+  onLand: (() => void) | null = null;
+  private stepSign = 0;
+  private jumpSign = 0;
 
   constructor(private readonly model: PetModel) {
     this.expressions = new PetExpressions(model);
@@ -133,6 +141,11 @@ export class PetAnimator {
       case 'special:lap': return { headPitch: 0.42 + 0.05 * Math.sin(t * 11), motionRotX: 0.12 };
       case 'special:bark': return { headPitch: -0.15 + 0.06 * Math.sin(t * 9), earUp: 0.3 };
       case 'special:alert': return { earUp: 0.8 };
+      // v8: reacciones breves a su propia voz / a la caricia
+      case 'special:vocal': return { headPitch: -0.14, earUp: 0.25, headRoll: 0.04 * Math.sin(t * 7) };
+      case 'special:purr': return { bodyScaleY: 0.006 * Math.sin(t * 48), headPitch: 0.08, headRoll: 0.1 };
+      case 'special:relaxEars': return { earUp: -0.45, earBack: 0.35, headPitch: 0.06 };
+      case 'special:wiggle': return { bodyRotY: 0.1 * Math.sin(t * 5), motionRotZ: 0.05 * Math.sin(t * 5), headRoll: 0.08 * Math.sin(t * 5 + 0.6) };
       default: return {};
     }
   }
@@ -183,6 +196,21 @@ export class PetAnimator {
     for (const key of POSE_KEYS) this.pose[key] += (target[key] - this.pose[key]) * kp;
     this.apply(this.pose);
     this.expressions.update(dt);
+    this.emitContacts(t);
+  }
+
+  // Un pie toca el suelo cada vez que el seno de la fase cambia de signo (dos por ciclo)
+  private emitContacts(t: number): void {
+    const loco = this.channels.locomotion.weights;
+    const run = (loco.run ?? 0) > 0.5;
+    if ((loco.walk ?? 0) + (loco.run ?? 0) > 0.5 && this.speed > 0.05) {
+      const sg = Math.sign(Math.sin(this.phase));
+      if (sg && sg !== this.stepSign) { if (this.stepSign) this.onFootContact?.(run); this.stepSign = sg; }
+    } else this.stepSign = 0;
+    if ((this.channels.special.weights.jump ?? 0) > 0.5) {
+      const sg = Math.sign(Math.sin(t * 6.5));
+      if (sg && sg !== this.jumpSign) { if (this.jumpSign) this.onLand?.(); this.jumpSign = sg; }
+    } else this.jumpSign = 0;
   }
 
   private apply(p: Pose): void {

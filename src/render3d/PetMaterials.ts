@@ -156,6 +156,11 @@ export const PetMaterials = {
     cache.forEach((m) => m.dispose());
     cache.clear();
   },
+  // v7: ¿es un material compartido de la caché? (no se debe desechar al cambiar de entorno)
+  isCached(m: THREE.Material): boolean {
+    for (const x of cache.values()) if (x === m) return true;
+    return false;
+  },
 };
 
 /* Geometrías compartidas: todas las piezas redondas reutilizan la misma esfera
@@ -186,4 +191,9 @@ export const PetGeometry = {
   torusArc: () => g('torusArc', () => new THREE.TorusGeometry(1, 0.13, 10, 32, Math.PI)),
   cone: () => g('cone', () => new THREE.ConeGeometry(1, 1, 32, 1)),
   ring: () => g('ring', () => new THREE.TorusGeometry(1, 0.06, 8, 40)),
+  // v7: ¿geometría compartida? (no se desecha con el entorno ni con los objetos)
+  isShared: (geo: THREE.BufferGeometry): boolean => {
+    for (const x of geoCache.values()) if (x === geo) return true;
+    return false;
+  },
 };

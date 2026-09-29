@@ -20,6 +20,8 @@ const TABLE: Record<ExperienceKind, number | null> = {
   picked_up: 0.2,
   investigated: 0.05,
   called_responded: 0.6,
+  approached_object: 0.05, // v7: acercarse a algo nuevo y que no pase nada (la extinción del miedo va por el canal de amenaza)
+  first_visit: 0, // v7: la primera visita se valora por lo que pase (experiencias concretas), no por sí misma
   called_ignored: 0,
   mystery_opened: 0.6,
   mystery_avoided: 0,
@@ -88,4 +90,23 @@ export function needOutcome(before: number, after: number): number {
   const relief = before - after;
   if (relief <= 0.02) return -0.1;
   return Math.max(-1, Math.min(1, relief * 3 * (0.5 + before)));
+}
+
+/*
+ * v6: MODULADOR DE AMENAZA (independiente de la recompensa). Ver docs/living-world.md.
+ *   > 0  susto real con causa en el mundo → refuerza las vías estímulo → miedo que acababan de coincidir
+ *   < 0  exposición sin consecuencias (se acercó, investigó, abrió, jugó y no pasó nada) → extinción
+ * Es la EXPERIENCIA la que modula; no hay ninguna regla del tipo "la caja da miedo".
+ */
+export function threatFor(exp: { kind: ExperienceKind; valence: number; intensity: number; subject: string | null; reward: number }): number {
+  switch (exp.kind) {
+    case 'scared': return (exp.subject && exp.subject !== 'player' ? 0.8 : 0.5) * Math.max(0.3, exp.intensity);
+    case 'hid': return 0.3;
+    case 'investigated': return exp.valence > 0.1 ? -0.25 : 0;
+    case 'approached_object': return exp.valence > 0 ? -0.2 : 0;
+    case 'mystery_opened': return -0.5;
+    case 'picked_up': return exp.valence > 0 ? -0.15 : 0;
+    case 'played': return exp.reward > 0 ? -0.1 : 0;
+    default: return 0;
+  }
 }

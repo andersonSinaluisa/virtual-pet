@@ -56,4 +56,20 @@ export const growthStore = createStore<GrowthEvent | null>(null);
 // Versión del aprendizaje (sube como mucho 1 vez/s: la UI no se redibuja por cada Δw)
 export const learningStore = createStore(0);
 
-export const devStore = createStore<{ running: boolean; speed: number; debugScene: boolean; clockSpeed: number; growthPreview: number | null }>({ running: true, speed: 1, debugScene: false, clockSpeed: 1, growthPreview: null });
+// v7: capas del World Inspector (FOV, oído, percibidos, atención, navegación) y objeto seleccionado
+export interface WorldDebugState {
+  fov: boolean;
+  hearing: boolean;
+  perceived: boolean;
+  attention: boolean;
+  navigation: boolean;
+  labels: boolean; // novedad / familiaridad sobre cada objeto
+}
+
+export const devStore = createStore<{
+  running: boolean; speed: number; debugScene: boolean; clockSpeed: number; growthPreview: number | null;
+  world: WorldDebugState; inspectId: number | null; perf: { fps: number; frameMs: number; tickMs: number } | null; perfMeter: boolean;
+}>({
+  running: true, speed: 1, debugScene: false, clockSpeed: 1, growthPreview: null,
+  world: { fov: false, hearing: false, perceived: false, attention: false, navigation: false, labels: false }, inspectId: null, perf: null, perfMeter: false,
+});

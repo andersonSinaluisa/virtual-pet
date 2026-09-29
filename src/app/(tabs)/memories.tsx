@@ -44,6 +44,19 @@ export default function Memories() {
     </View>
   );
 
+  // v7: los lugares y lo que ha descubierto en ellos (sin números)
+  const places = (
+    <Squishable onPress={() => router.push('/world')} accessibilityLabel="Lugares y descubrimientos">
+      <Card tone="warm" style={styles.capture}>
+        <View style={styles.camera}><Icon name="explore" size={26} color={colors.onPrimaryContainer} /></View>
+        <View style={{ flex: 1 }}>
+          <Text variant="headlineSm">🗺️ Lugares y descubrimientos</Text>
+          <Text variant="bodySm" color={colors.textMuted}>Lo que conoce de su mundo</Text>
+        </View>
+      </Card>
+    </Squishable>
+  );
+
   const capture = (
     <Card style={styles.capture}>
       <View style={styles.camera}><Icon name="camera" size={26} color={colors.onPrimaryContainer} /></View>
@@ -60,7 +73,7 @@ export default function Memories() {
       <FlatList
         data={list}
         keyExtractor={(m) => m.id}
-        ListHeaderComponent={header}
+        ListHeaderComponent={<View style={{ gap: spacing.md }}>{header}{places}</View>}
         ListFooterComponent={capture}
         ListEmptyComponent={<Text variant="bodyMd" color={colors.textMuted} align="center" style={{ padding: spacing.xl }}>Aún no hay recuerdos aquí.</Text>}
         contentContainerStyle={[styles.content, { paddingBottom: TAB_BAR_SPACE + spacing.md }]}

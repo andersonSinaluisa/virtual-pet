@@ -17,6 +17,7 @@ export interface PetBodyState extends PetStats {
   y: number;
   facing: number;
   carrying: number | null;
+  orientation?: number; // v7: hacia dónde mira en el plano (radianes); define el campo de visión
 }
 
 const SLEEP_METABOLISM = 0.3;
@@ -40,6 +41,9 @@ export class Pet implements PetStats {
   speed = 0; // 1 = caminar, >1 = correr
   heading: number | null = null;
   facing = 1; // 1 derecha, -1 izquierda
+  // v7: orientación en el plano del suelo (radianes, atan2(dy, dx)). π/2 = mirando al frente (hacia la pantalla).
+  // Define el campo de visión: lo que queda detrás no se ve.
+  orientation = Math.PI / 2;
   lookTarget: Point | null = null; // hacia dónde mira (jugador, objeto, lugar)
   carrying: number | null = null; // id del objeto que lleva
   hidden = false;
@@ -55,6 +59,7 @@ export class Pet implements PetStats {
     this.vx = 0; this.vy = 0; this.speed = 0;
     this.heading = null;
     this.facing = 1;
+    this.orientation = Math.PI / 2;
     this.lookTarget = null;
     this.carrying = null;
     this.hidden = false;
@@ -86,7 +91,7 @@ export class Pet implements PetStats {
   }
 
   exportState(): PetBodyState {
-    return { ...this.snapshot(), x: this.x, y: this.y, facing: this.facing, carrying: this.carrying };
+    return { ...this.snapshot(), x: this.x, y: this.y, facing: this.facing, carrying: this.carrying, orientation: this.orientation };
   }
 
   importState(s: Partial<PetBodyState>): void {
@@ -97,6 +102,7 @@ export class Pet implements PetStats {
     if (typeof s.x === 'number' && Number.isFinite(s.x)) this.x = Math.min(0.96, Math.max(0.04, s.x));
     if (typeof s.y === 'number' && Number.isFinite(s.y)) this.y = Math.min(1, Math.max(0, s.y));
     if (s.facing === 1 || s.facing === -1) this.facing = s.facing;
+    if (typeof s.orientation === 'number' && Number.isFinite(s.orientation)) this.orientation = s.orientation;
     this.carrying = typeof s.carrying === 'number' ? s.carrying : null;
   }
 }

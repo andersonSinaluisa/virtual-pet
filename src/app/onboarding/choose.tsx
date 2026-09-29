@@ -17,6 +17,7 @@ import { IconButton, PrimaryButton } from '@/components/ui/Buttons';
 import { DEFAULT_GLOW, Glow } from '@/components/ui/Glow';
 import { Squishable } from '@/components/ui/Squishable';
 import { Text } from '@/components/ui/Text';
+import { PetVoiceBridge } from '@/services/audio/PetVoiceBridge';
 import { haptic } from '@/services/haptics';
 import { colors, radius, shadows, spacing } from '@/theme';
 
@@ -59,7 +60,7 @@ export default function ChoosePet() {
           const on = s === species;
           return (
             <Squishable key={s} accessibilityRole="radio" accessibilityState={{ selected: on }} accessibilityLabel={LABELS[s].name}
-              onPress={() => { setSpecies(s); haptic('select'); preview.greet(); }}
+              onPress={() => { setSpecies(s); haptic('select'); preview.greet(); PetVoiceBridge.preview(s); }}
               style={[styles.option, on ? styles.optionOn : null]}>
               <Text style={styles.emoji}>{LABELS[s].emoji}</Text>
               <Text variant="labelSm" color={on ? colors.onPrimaryContainer : colors.textMuted}>{LABELS[s].name}</Text>

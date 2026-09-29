@@ -8,7 +8,7 @@ import { join } from 'node:path';
 
 import type { EpisodeRecord } from '../memory/types';
 import { migrateSave } from '../persistence/migrations';
-import { DEFAULT_SETTINGS } from '../persistence/SaveGame';
+import { CURRENT_SAVE_VERSION, DEFAULT_SETTINGS } from '../persistence/SaveGame';
 import { seededRng } from '../random';
 import { detectHabits, mainSleeps } from '../routines/HabitDetector';
 import { approxHour, interpretEvolution, routineHeadline } from '../routines/RoutineInterpreter';
@@ -171,7 +171,7 @@ describe('Persistencia y offline', () => {
     const v2 = { ...save, saveVersion: 2, world: { ...save.world, lightOn: true }, memory: { ...save.memory } };
     delete v2.memory.routine;
     const m = migrateSave(v2);
-    expect(m.saveVersion).toBe(4); // v2 → v3 → v4
+    expect(m.saveVersion).toBe(CURRENT_SAVE_VERSION); // v2 → v3 → v4 → v5
     expect(m.world.lightOn).toBe(false);
     expect(m.memory.routine).toEqual({ episodes: [], snapshots: [] });
   }, 120_000);

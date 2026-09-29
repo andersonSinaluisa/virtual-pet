@@ -63,6 +63,8 @@ const FIRST_TIME: Partial<Record<ExperienceKind, FirstRule>> = {
   slept: { title: (n) => `La primera siesta de ${n}`, story: (n) => `Se acurrucó en su camita y se quedó dormido.`, tags: ['#Descanso'], icon: 'moon' },
   danced: { title: (n) => `${n} bailó de alegría`, story: (n) => `Sin música, solo de felicidad, dio vueltitas y saltó.`, tags: ['#Alegría'], icon: 'music' },
   ate: { title: (n, s) => (s === 'treat' ? `${n} probó su primera galletita` : `${n} comió en su plato`), story: (n) => `Se acercó a comer con calma.`, tags: ['#Cuidados'], icon: 'food' },
+  // v7: SE ACERCÓ (no es lo mismo que verlo, ni que conocerlo del todo)
+  approached_object: { title: (n, s) => `La primera vez que ${n} se acercó a ${subjectLabel(s)}`, story: (n, s) => `Vio ${subjectLabel(s)} y, poco a poco, se acercó para olfatear de cerca.`, tags: ['#Curiosidad', '#PrimeraVez'], icon: 'search' },
   called_responded: { title: (n) => `${n} vino cuando lo llamaste`, story: (n) => `Escuchó tu voz, levantó las orejas y vino hacia ti.`, tags: ['#Vínculo', '#AprenderJuntos'], icon: 'wave', key: true },
 };
 

@@ -16,6 +16,7 @@ import { LIFE_STAGES, nextStage, stageIndex, type LifeStage } from './LifeStage'
 export const MILESTONE_TYPES = [
   'ARRIVED', 'FIRST_PLAY', 'FIRST_SLEEP_ALONE', 'FIRST_DISCOVERY', 'FIRST_LEARNED_ASSOCIATION',
   'FIRST_HABIT', 'FIRST_EXPLORE', 'FIRST_FETCH', 'GREW',
+  'FIRST_OUTING', 'FIRST_PARK', // v7: primera salida al jardín, primera visita al parque
 ] as const;
 export type MilestoneType = (typeof MILESTONE_TYPES)[number];
 

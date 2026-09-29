@@ -41,3 +41,6 @@ example
 # generated native folders
 /ios
 /android
+
+# audio: originales descargados (npm run audio:fetch); los WAV procesados sí se versionan
+assets/audio/pets/_raw/

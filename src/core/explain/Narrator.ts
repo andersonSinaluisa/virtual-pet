@@ -30,7 +30,7 @@ const THOUGHTS: [Action, (focus: string | null, name: string) => string][] = [
   ['REST', () => 'Un descansito…'],
   ['EXPLORE', () => 'Voy a ver qué hay por ahí.'],
   ['RUN', () => '¡Wiii!'],
-  ['WALK', () => 'Paseíto por la habitación.'],
+  ['WALK', () => 'Un paseíto…'],
   ['SMILE', () => 'Qué a gusto estoy.'],
   ['MAKE_SOUND', () => '¡Guau, guau!'],
 ];
@@ -44,7 +44,11 @@ export function thoughtFor(active: readonly Action[], world: World, name: string
   const carried = world.getObject(world.pet.carrying);
   const label = (carried ?? focus)?.label ?? null;
   const A = new Set(active);
-  if (A.has('SLEEP') && !world.pet.asleep) return 'Tengo sueño… ¿dónde está mi camita?';
+  if (A.has('SLEEP') && !world.pet.asleep) return world.location === 'room' ? 'Tengo sueño… ¿dónde está mi camita?' : 'Tengo sueño… quiero volver a mi camita.';
+  // v7: un sonido que no ve (detrás, fuera) también da que pensar
+  const t = world.attentionTarget;
+  if (!focus && t?.type === 'sound' && (A.has('LOOK_AT_OBJECT') || A.has('INVESTIGATE'))) return '¿Qué ha sido eso?';
+  if (A.has('WALK') && world.location !== 'room' && active.length === 1) return world.location === 'park' ? '¡Cuánto espacio!' : 'Qué bien huele aquí fuera.';
   for (const [action, fn] of THOUGHTS) if (A.has(action)) return fn(label, name);
   return needThought(world.pet.snapshot());
 }

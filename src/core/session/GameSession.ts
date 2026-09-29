@@ -17,7 +17,7 @@ import {
   BRAIN_CONFIG_VERSION, cloneBrainConfig, createBrainConfig, type BrainConfig, type PresetKey, type SensorKey,
 } from '../brain/BrainConfig';
 import { buildDecisionTrace, EXPLAINED_ACTIONS, type DecisionTrace } from '../explain/DecisionTrace';
-import { NATURAL_KINDS, RewardBaseline, rewardFor } from '../learning/RewardModel';
+import { NATURAL_KINDS, RewardBaseline, rewardFor, threatFor } from '../learning/RewardModel';
 import { SynapticPlasticity, type LearningEvent, type LearningState } from '../learning/Plasticity';
 import { exportWeights, importWeights, type WeightImportReport } from '../brain/BrainWeights';
 import { computeTraits, type TraitReading } from '../discovery/Personality';
@@ -33,12 +33,19 @@ import type { Discovery, Experience, ExperienceKind, Moment, SubjectKey , Episod
 import {
   CURRENT_SAVE_VERSION, DEFAULT_INVENTORY, DEFAULT_SETTINGS, type Inventory, type PetProfile, type SaveGame, type SettingsData, type SpeciesKey,
 } from '../persistence/SaveGame';
-import { defaultRng, makeId, type Rng } from '../random';
+import { defaultRng, makeId, seededRng, type Rng } from '../random';
 import { applyPhysiology, createSimConfig, type PetStat, type PetStats, type PhysiologyProfile, type SimConfig } from '../simulation/SimConfig';
 import { Simulation, type StepOptions, type StepResult } from '../simulation/Simulation';
 import type { World } from '../simulation/World';
-import { ITEMS, type ItemKind } from '../world/Items';
+import { ITEMS, isItemKind, type ItemKind } from '../world/Items';
+import { LOCATIONS, PLAYABLE_LOCATIONS, exitBetween, type LocationId } from '../world/Locations';
+import { familiarityWord, KNOWLEDGE_STAGES, STAGE_WORD, type KnowledgeStage, type StageEvent } from '../world/ExplorationMemory';
+import { stageIndex } from '../growth/LifeStage';
+import type { Point } from '../simulation/Pet';
 import { Emitter } from './Emitter';
+import { generateVoiceProfile, hashSeed, type PetVoiceProfile } from '../audio/PetVoiceProfile';
+import { VocalizationSystem, type LayerState, type VocalContext, type VocalizationEvent } from '../audio/VocalizationSystem';
+import type { LayerId } from '../audio/SpeciesVocalizationProfile';
 import { weightsHash } from '../growth/brainHash';
 import { GROWTH_CONFIG, stageConfig } from '../growth/GrowthConfig';
 import { compareSummaries, compareWithinStage, recapMoments, type StageComparison } from '../growth/GrowthStory';
@@ -46,7 +53,7 @@ import { GrowthSystem, newGrowthState, type Eligibility } from '../growth/Growth
 import { stageLabel, type LifeStage } from '../growth/LifeStage';
 
 
-import { roomArea } from '../routines/areas';
+import { areaOf } from '../routines/areas';
 import { detectHabits, type Habit } from '../routines/HabitDetector';
 import { interpretRoutines, routineDiscoveries, snapshotEntries, type RoutineCard } from '../routines/RoutineInterpreter';
 import { clockInfo, type Clock, type TimeOfDay } from '../time/WorldClock';
@@ -95,6 +102,9 @@ export type SessionEvents = {
   gameEnded: GameSummary;
   changed: undefined;
   learning: LearningEvent;
+  // v8 (voz): qué dice la mascota (la plataforma lo reproduce) y sus capas continuas
+  vocalization: VocalizationEvent;
+  audioLayers: Record<LayerId, LayerState>;
 };
 
 // Acciones que el jugador puede recompensar justo después (❤️ Recompensar)
@@ -146,7 +156,50 @@ export interface PetSnapshot {
   lampOn: boolean;
   area: string;
   recentActivity: number;
+  // v7: mundo vivo
+  location: LocationId;
+  locationLabel: string;
+  locationEmoji: string;
+  gardenDoorOpen: boolean;
+  weather: string;
 }
+
+// v7: lo que la UI enseña de cada lugar (sin números)
+export interface PlaceSummary {
+  id: LocationId;
+  name: string;
+  emoji: string;
+  here: boolean;
+  visited: boolean;
+  familiarity: string; // "Muy familiar", "Conocido", "Aún por descubrir"
+  canBeThere: boolean; // su cuerpo ya puede (etapa de vida)
+  readyHint: string | null; // "Milo parece listo para conocer el jardín"
+  available: boolean; // forest/beach: aún no
+}
+
+export interface ObjectDiscoverySummary {
+  kind: ItemKind;
+  name: string;
+  emoji: string;
+  stage: KnowledgeStage;
+  stageWord: string;
+  familiarity: string;
+  firstSeenDay: number;
+}
+
+// v7: primera visita a un lugar en curso (se observa lo que HACE, no se le dice qué hacer)
+interface VisitObservation {
+  location: LocationId;
+  startTick: number;
+  start: number;
+  offline: boolean;
+  arrive: Point;
+  ticks: number;
+  maxDist: number;
+  onsets: Partial<Record<Action, number>>;
+  seen: ItemKind[];
+}
+const FIRST_VISIT_TICKS = 180; // ~1 minuto de app
 
 const DAY_MS = 86_400_000;
 const UNSAFE_FOR_GROWTH: ReadonlySet<Action> = new Set<Action>(['PLAY', 'PICK_UP_OBJECT', 'EAT', 'DRINK', 'GET_SCARED', 'HIDE', 'RUN', 'SLEEP']);
@@ -181,6 +234,10 @@ export class GameSession {
   private lastHabitDay: number | null = null;
   private physiology: PhysiologyProfile;
   lastGrowth: GrowthEvent | null = null; // última transición (herramientas: comparar antes/después)
+  private visit: VisitObservation | null = null;
+  // v8: la voz (interpreta lo que ya hizo la SNN; nunca decide comportamiento)
+  vocal!: VocalizationSystem;
+  private traitCache: { tick: number; traits: VocalContext['traits']; familiarity: number } | null = null;
 
   private constructor(profile: PetProfile, brainConfig: BrainConfig, opts: SessionOptions, memory = new PetMemory(), initial?: BrainConfig) {
     this.profile = profile;
@@ -194,7 +251,63 @@ export class GameSession {
     this.inventory = { owned: [...DEFAULT_INVENTORY] };
     this.initialBrain = initial ?? cloneBrainConfig(brainConfig);
     this.attachPlasticity();
+    this.attachWorld();
     this.applyStage();
+    this.attachVoice(generateVoiceProfile(`${profile.name}|${profile.species}|${profile.adoptedAt}`, profile.species));
+  }
+
+  // v8: voz propia (estable) + sistema de vocalización con semilla por mascota
+  attachVoice(voice: PetVoiceProfile): void {
+    // Semilla estable (nombre + especie + adopción, como los microeventos): reproducible en tests
+    const seed = hashSeed(`${this.profile.name}|${this.profile.species}|${this.profile.adoptedAt}|voice`);
+    this.vocal = new VocalizationSystem(this.profile.species, voice, seededRng(seed), this.profile.adoptedAt);
+  }
+
+  get voice(): PetVoiceProfile {
+    return this.vocal.voice;
+  }
+
+  // `now` se pasa siempre: leer el reloj avanza los relojes simulados de los tests
+  vocalContext(now: number, offline = false): VocalContext {
+    const pet = this.world.pet;
+    const tick = this.sim.network.tickCount;
+    if (!this.traitCache || tick - this.traitCache.tick > 90) {
+      const petted = this.memory.experiences.filter((e) => e.kind === 'petted').length;
+      this.traitCache = { tick, traits: Object.fromEntries(this.traits().map((t) => [t.key, t.score])), familiarity: Math.min(1, (this.day(now) - 1) / 14 + petted / 60) };
+    }
+    return {
+      nowMs: now, species: this.profile.species, stage: this.growth.stage, asleep: pet.asleep,
+      stats: { energy: pet.energy, fatigue: pet.fatigue, affection: pet.affection, fear: pet.fear, boredom: pet.boredom },
+      speed: pet.speed, playerPresent: this.world.player.present, petting: this.world.player.touchTicks > 0,
+      familiarity: this.traitCache.familiarity, traits: this.traitCache.traits, offline,
+    };
+  }
+
+  private vocalize(r: StepResult, onsets: readonly Action[], now: number): void {
+    const ctx = this.vocalContext(now, r.offline);
+    const { events, layers } = this.vocal.update(ctx, { tick: r.tick, onsets, active: r.active, events: r.events });
+    if (r.offline) return; // offline: solo se cuentan intenciones (nadie estaba escuchando)
+    for (const e of events) {
+      // Opcional: la voz como estímulo del mundo (futuras mascotas). Audio ≠ estímulo.
+      if (e.stimulus > 0) this.world.emitSound({ kind: 'voice', intensity: e.stimulus, x: this.world.pet.x, y: this.world.pet.y });
+      this.events.emit('vocalization', e);
+    }
+    this.events.emit('audioLayers', layers);
+  }
+
+  // v7: el mundo percibe con la memoria de ESTA mascota; su cuerpo decide dónde puede estar;
+  // los microeventos tienen su propia semilla (reproducibles por mascota)
+  private attachWorld(): void {
+    this.world.knowledge = this.memory.exploration;
+    this.world.setClock(this.now()); // la hora del mundo desde el primer momento (no desde el primer tick)
+    this.world.capability = (loc) => {
+      const min = LOCATIONS[loc].minStage;
+      return !min || stageIndex(this.growth.stage) >= stageIndex(min);
+    };
+    // Semilla estable por mascota (nombre + especie + adopción): reproducible en tests y tras cargar
+    let h = 7;
+    for (const c of `${this.profile.name}|${this.profile.species}|${this.profile.adoptedAt}`) h = (h * 31 + c.charCodeAt(0)) % 2147483647;
+    this.world.ambient.setRng(seededRng(h));
   }
 
   // v6: lo que la ETAPA modula (nunca el cerebro): plasticidad, cuerpo y capacidades
@@ -220,6 +333,8 @@ export class GameSession {
     const preset = input.preset ?? 'equilibrado';
     const profile: PetProfile = { id: makeId('pet', opts.rng), name: input.name.trim() || 'Milo', species: input.species, adoptedAt: now, preset };
     const s = new GameSession(profile, createBrainConfig(preset), opts);
+    // Llega a SU habitación con SUS muebles (lo demás del mundo le es desconocido)
+    s.memory.exploration.seedHome(now, LOCATIONS.room.furniture.map((f) => f.kind));
     const arrival = composeAdoption(profile.name, now);
     arrival.lifeStage = s.growth.stage;
     s.memory.addMoment(arrival);
@@ -234,6 +349,7 @@ export class GameSession {
     importWeights(initial, save.brain.initialWeights ?? save.brain.weights);
     const s = new GameSession(save.profile, config, opts, new PetMemory(save.memory), initial);
     s.growth = new GrowthSystem(JSON.parse(JSON.stringify(save.growth)) as SaveGame['growth']);
+    s.attachWorld();
     s.inventory = { owned: [...save.inventory.owned] };
     s.world.importState(save.world);
     s.world.pet.importState(save.pet);
@@ -243,6 +359,7 @@ export class GameSession {
     s.sim.actionSystem.importState(save.brain.actions);
     s.attachPlasticity(save.learning); // tras reconstruir la red: pesos iniciales/actuales y estado
     s.applyStage();
+    s.attachVoice(save.audio.voice);
     return { session: s, weights };
   }
 
@@ -266,6 +383,7 @@ export class GameSession {
       memory: this.memory.exportState(),
       settings: { ...settings },
       learning: { ...this.plasticity.exportState(), baselines: this.baseline.export() },
+      audio: { voice: { ...this.vocal.voice, preferredVariants: [...this.vocal.voice.preferredVariants] } },
     };
   }
 
@@ -307,6 +425,7 @@ export class GameSession {
     }
 
     const now = this.now();
+    this.onWorldEvents(r, now);
     const { onsets, experiences, episodes } = this.recorder.observe(r, this.world, { now, day: this.day(now) });
     for (const e of episodes) this.onEpisode(e, now);
     this.trackReturn(r, onsets, now);
@@ -316,6 +435,9 @@ export class GameSession {
       if (EXPLAINED_ACTIONS.has(a) && !r.offline) this.recordDecision(a, r, now);
     }
     for (const e of experiences) this.ingest(e);
+    this.onKnowledge(this.world.knowledge.drainStageEvents(), r, now);
+    this.observeVisit(r, onsets, now);
+    this.vocalize(r, onsets, now);
 
     if (this.activeGame) this.activeGame.game.observe(r, this.activeGame.ctx);
     if (experiences.length || r.tick % DISCOVERY_EVERY === 0) this.evaluateDiscoveries();
@@ -449,7 +571,7 @@ export class GameSession {
     if (r.events.some((e) => e.type === 'PLAYER_ENTERED')) {
       const info = clockInfo(now);
       this.pendingReturn = {
-        tick: r.tick, start: now, minuteOfDay: Math.round(info.minuteOfDay), day: info.day, area: roomArea(this.world.pet),
+        tick: r.tick, start: now, minuteOfDay: Math.round(info.minuteOfDay), day: info.day, area: areaOf(this.world.location, this.world.pet),
         light: this.world.lightLevel, activity: this.world.recentActivity, offline: r.offline,
         d0: this.world.distance(this.world.pet, this.world.player),
       };
@@ -520,7 +642,17 @@ export class GameSession {
       const ev = this.plasticity.applyReward(signal, { source: exp.kind, subject: exp.subject, at: exp.at, tick: exp.tick, natural: NATURAL_KINDS.has(exp.kind) });
       if (ev) this.events.emit('learning', ev);
     }
+    // v7: segundo modulador (AMENAZA): un susto real refuerza estímulo→miedo; la exposición segura lo extingue
+    const threat = threatFor(exp);
+    if (threat) {
+      const ev = this.plasticity.applyThreat(threat, { source: exp.kind, subject: exp.subject, at: exp.at, tick: exp.tick });
+      if (ev) this.events.emit('learning', ev);
+    }
+    // La memoria de exploración anota el resultado (evidencia; no decide nada)
+    if (exp.subject && isItemKind(exp.subject)) this.world.knowledge.noteOutcome(exp.subject, exp.valence, exp.at);
+    if (exp.valence > 0.2 || exp.valence < -0.2) this.world.knowledge.noteLocationOutcome(this.world.location, exp.valence);
     this.growth.noteExperience(exp.kind, exp.subject, exp.reward, exp.at, exp.offline, exp.valence, exp.intensity);
+    this.vocal?.noteExperience(exp, this.vocalContext(exp.at, exp.offline));
     if (!exp.offline) {
       if (exp.kind === 'played') this.growth.addMilestone('FIRST_PLAY', exp.at, exp.day, exp.subject);
       if (exp.kind === 'fetch_returned') this.growth.addMilestone('FIRST_FETCH', exp.at, exp.day, exp.subject);
@@ -550,11 +682,11 @@ export class GameSession {
   }
 
   // Experiencia registrada por un minijuego (contexto de juego)
-  recordExperience(kind: ExperienceKind, subject: SubjectKey | null, valence: number, intensity: number, gameId: GameId | null): Experience {
+  recordExperience(kind: ExperienceKind, subject: SubjectKey | null, valence: number, intensity: number, gameId: GameId | null, offline = false): Experience {
     const now = this.now();
     const exp: Experience = {
       id: makeId('exp', this.config.rng), at: now, day: this.day(now), tick: this.sim.network.tickCount, kind, subject,
-      valence: Math.max(-1, Math.min(1, valence)), intensity: Math.max(0, Math.min(1, intensity)), gameId, offline: false,
+      valence: Math.max(-1, Math.min(1, valence)), intensity: Math.max(0, Math.min(1, intensity)), gameId, offline,
       reward: rewardFor(kind), actions: [...this.sim.last.active], context: buildContext(this.world, now),
     };
     this.ingest(exp);
@@ -776,8 +908,166 @@ export class GameSession {
     const info = clockInfo(this.now()), w = this.world;
     return {
       minuteOfDay: Math.round(info.minuteOfDay), timeOfDay: info.timeOfDay, lightLevel: w.lightLevel, lampOn: w.lightOn,
-      area: roomArea(w.pet), recentActivity: w.recentActivity,
+      area: areaOf(w.location, w.pet), recentActivity: w.recentActivity,
+      location: w.location, locationLabel: LOCATIONS[w.location].name, locationEmoji: LOCATIONS[w.location].emoji,
+      gardenDoorOpen: this.gardenDoorOpen(), weather: w.env.weatherState,
     };
+  }
+
+  // ---------- Mundo vivo (v7) ----------
+  // Lo que pasó en el mundo este tick y que es una EXPERIENCIA (no una orden): la caja se abrió
+  private onWorldEvents(r: StepResult, now: number): void {
+    for (const e of r.events) {
+      if (e.type !== 'OBJECT_OPENED') continue;
+      const kind = isItemKind(e.detail) ? e.detail : null;
+      this.world.knowledge.interact('mysteryBox', now);
+      if (kind) this.unlock(kind);
+      const exp = this.recordExperience('mystery_opened', kind, 0.7, 0.8, this.activeGameId, r.offline);
+      if (!this.activeGame && !r.offline) {
+        this.addMoment(makeMoment({
+          now, day: this.day(now), kind: 'first_time', title: `${this.profile.name} abrió la caja misteriosa`,
+          story: `La olfateó y la empujó con el hocico hasta que cedió.${kind ? ` Dentro había ${ITEMS[kind].label}.` : ''}`,
+          tags: ['#Curiosidad', '#Aventura'], icon: 'box', subject: kind, experienceIds: [exp.id],
+        }));
+      }
+    }
+  }
+
+  // Etapas de conocimiento: VER no es CONOCER. Se acercó → experiencia; lo investigó/usó → descubrimiento
+  private onKnowledge(events: readonly StageEvent[], r: StepResult, now: number): void {
+    if (this.visit) for (const e of events) if (e.stage === 'SAW' && !this.visit.seen.includes(e.kind)) this.visit.seen.push(e.kind);
+    for (const e of events) {
+      if (!e.first || ITEMS[e.kind].type === 'bed' || ITEMS[e.kind].type === 'food' || ITEMS[e.kind].type === 'water') continue;
+      if (e.stage === 'APPROACHED') {
+        const fear = this.world.pet.fear;
+        const exp: Experience = {
+          id: makeId('exp', this.config.rng), at: now, day: this.day(now), tick: r.tick, kind: 'approached_object', subject: e.kind,
+          valence: Math.max(-1, Math.min(1, 0.3 - fear)), intensity: 0.4, gameId: this.activeGameId, offline: r.offline,
+          reward: rewardFor('approached_object'), actions: [...r.active], context: buildContext(this.world, now),
+        };
+        this.ingest(exp);
+      } else if ((e.stage === 'INVESTIGATED' || e.stage === 'INTERACTED') && !r.offline) {
+        const key = `found:${e.kind}`;
+        if (this.memory.hasDiscovery(key)) continue;
+        const def = ITEMS[e.kind];
+        const d: Discovery = {
+          id: makeId('dis', this.config.rng), key, at: now, day: this.day(now), evidence: 1, subject: e.kind, icon: 'search',
+          title: `✨ ${this.profile.name} descubrió ${def.label}`,
+          text: e.stage === 'INVESTIGATED' ? `No se conformó con verla: se acercó y la investigó de cerca.` : `La probó con sus propias patas.`,
+        };
+        this.memory.addDiscovery(d);
+        this.onDiscovery(d);
+        this.events.emit('discovery', d);
+      }
+    }
+  }
+
+  // Primera visita a un lugar: se OBSERVA qué hace durante un rato y se convierte en recuerdo
+  private observeVisit(r: StepResult, onsets: readonly Action[], now: number): void {
+    const w = this.world;
+    if (w.firstVisit && !this.visit) {
+      this.visit = { location: w.firstVisit.location, startTick: r.tick, start: now, offline: r.offline, arrive: { x: w.pet.x, y: w.pet.y }, ticks: 0, maxDist: 0, onsets: {}, seen: [] };
+      w.firstVisit = null;
+    }
+    const v = this.visit;
+    if (!v) return;
+    if (w.location === v.location) {
+      v.ticks++;
+      v.maxDist = Math.max(v.maxDist, w.distance(w.pet, v.arrive));
+      for (const a of onsets) v.onsets[a] = (v.onsets[a] ?? 0) + 1;
+    }
+    if (v.ticks >= FIRST_VISIT_TICKS || w.location !== v.location) this.closeVisit(v, now);
+  }
+
+  private closeVisit(v: VisitObservation, now: number): void {
+    this.visit = null;
+    const n = (a: Action) => v.onsets[a] ?? 0;
+    const place = LOCATIONS[v.location];
+    const fear = n('GET_SCARED') + n('HIDE') + n('MOVE_AWAY');
+    const explore = n('EXPLORE') + n('INVESTIGATE') + n('LOOK_AT_OBJECT');
+    const play = n('PLAY') + n('RUN') + n('PICK_UP_OBJECT');
+    const close = n('APPROACH') + n('FOLLOW_PLAYER');
+    const lines: string[] = [];
+    if (v.maxDist < 0.2) lines.push(`Se quedó cerca de la entrada, observando.`);
+    else if (explore >= 3) lines.push(`Exploró ${v.maxDist > 0.6 ? 'hasta la otra punta' : 'los alrededores'}, olfateándolo todo.`);
+    else lines.push(`Dio unos pasos para conocer el sitio.`);
+    if (fear >= 2) lines.push(`Algo le dio miedo y buscó refugio.`);
+    else if (fear === 1) lines.push(`Se sobresaltó una vez, pero siguió.`);
+    if (play >= 2) lines.push(`Hasta se animó a jugar.`);
+    if (close >= 2) lines.push(`No se separó mucho de ti.`);
+    const seen = v.seen.filter((k) => ITEMS[k].type !== 'bed' && ITEMS[k].type !== 'food' && ITEMS[k].type !== 'water').slice(0, 3);
+    if (seen.length) lines.push(`Vio por primera vez ${seen.map((k) => ITEMS[k].label).join(', ').replace(/, ([^,]*)$/, ' y $1')}.`);
+    const valence = Math.max(-1, Math.min(1, (explore + play) * 0.1 - fear * 0.25));
+    const exp = this.recordExperience('first_visit', null, valence, 0.8, null, v.offline);
+    const info = clockInfo(v.start);
+    const when = info.timeOfDay === 'MORNING' || info.timeOfDay === 'DAWN' ? 'mañana' : info.timeOfDay === 'NIGHT' ? 'noche' : 'tarde';
+    const m = makeMoment({
+      now, day: this.day(v.start), kind: 'first_time', keyMoment: true, icon: v.location === 'park' ? 'explore' : 'spa',
+      title: `${place.emoji} Primera ${when} en ${place.label}`,
+      story: `${v.offline ? 'Pasó mientras no estabas. ' : ''}${lines.join(' ')}`,
+      tags: ['#PrimeraVez', '#Explorar'], experienceIds: [exp.id],
+    });
+    this.addMoment(m);
+    this.growth.addMilestone(v.location === 'park' ? 'FIRST_PARK' : 'FIRST_OUTING', v.start, this.day(v.start), v.location, m.id);
+  }
+
+  gardenDoorOpen(): boolean {
+    const exit = exitBetween('room', 'garden');
+    return !!exit && this.world.isDoorOpen(exit, 'room');
+  }
+
+  // Abrir/cerrar la puerta del jardín: cambia el mundo; salir o no lo decide la mascota
+  setGardenDoor(open: boolean): boolean {
+    return this.world.setDoor('room', 'garden', open);
+  }
+
+  // ¿Su cuerpo ya puede estar allí? (restricción física/de producto, sin "niveles")
+  canBeIn(loc: LocationId): boolean {
+    return LOCATIONS[loc].available && this.world.capability(loc);
+  }
+
+  /*
+   * Salir juntos (el jugador la lleva): transición INTENCIONAL entre escenas, como sacar al
+   * perro de paseo. Lo que haga allí sigue siendo cosa suya.
+   */
+  goOuting(loc: LocationId): boolean {
+    if (!this.canBeIn(loc) || this.world.location === loc || this.activeGame) return false;
+    this.world.setClock(this.now());
+    // Salir al jardín juntos es salir por la puerta: queda abierta (si no, no podría volver sola)
+    if (loc === 'garden') this.setGardenDoor(true);
+    const ok = this.world.changeLocation(loc, undefined, 'outing');
+    if (ok) this.world.setPlayerPresent(true);
+    return ok;
+  }
+
+  places(): PlaceSummary[] {
+    const k = this.world.knowledge, name = this.profile.name;
+    return (['room', 'garden', 'park', 'forest', 'beach'] as LocationId[]).map((id) => {
+      const def = LOCATIONS[id], mem = k.location(id), visited = mem?.firstVisitAt != null;
+      const can = this.canBeIn(id);
+      let hint: string | null = null;
+      if (!def.available) hint = 'Algún día…';
+      else if (!can) hint = `${name} aún es pequeño para ${id === 'park' ? 'ir tan lejos' : 'salir'}`;
+      else if (!visited) hint = `${name} parece listo para conocer ${def.label}`;
+      return {
+        id, name: def.name, emoji: def.emoji, here: this.world.location === id, visited, available: def.available && PLAYABLE_LOCATIONS.includes(id),
+        familiarity: familiarityWord(k.locationFamiliarity(id), visited), canBeThere: can, readyHint: hint,
+      };
+    });
+  }
+
+  objectDiscoveries(): ObjectDiscoverySummary[] {
+    const k = this.world.knowledge;
+    const out: ObjectDiscoverySummary[] = [];
+    for (const [kind, m] of Object.entries(k.state.objects) as [ItemKind, NonNullable<(typeof k.state.objects)[ItemKind]>][]) {
+      const def = ITEMS[kind];
+      if (!def || def.type === 'bed' || def.type === 'food' || def.type === 'water' || def.type === 'hideout') continue;
+      out.push({
+        kind, name: def.name, emoji: def.emoji, stage: m.stage, stageWord: STAGE_WORD[m.stage], familiarity: familiarityWord(k.familiarity(kind), true),
+        firstSeenDay: this.day(m.firstSeenAt),
+      });
+    }
+    return out.sort((a, b) => KNOWLEDGE_STAGES.indexOf(b.stage) - KNOWLEDGE_STAGES.indexOf(a.stage));
   }
 
   traits(): TraitReading[] {

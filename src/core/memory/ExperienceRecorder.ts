@@ -17,7 +17,7 @@ import { needOutcome, rewardFor } from '../learning/RewardModel';
 import type { PetStat } from '../simulation/SimConfig';
 import type { StepResult } from '../simulation/Simulation';
 import type { World, WorldEventType } from '../simulation/World';
-import { roomArea } from '../routines/areas';
+import { areaOf } from '../routines/areas';
 import { clockInfo } from '../time/WorldClock';
 import type { EpisodeKind, EpisodeRecord, Experience, ExperienceContext, ExperienceKind, SubjectKey } from './types';
 
@@ -44,8 +44,9 @@ export function buildContext(world: World, now: number): ExperienceContext {
     .slice(0, 3).map((o) => o.kind);
   return {
     minuteOfDay: Math.round(info.minuteOfDay), day: info.day, light: r2(world.lightLevel),
-    area: roomArea(pet), zone: world.currentZone(), objects, playerPresent: world.player.present,
+    area: areaOf(world.location, pet), zone: world.currentZone(), objects, playerPresent: world.player.present,
     fatigue: r2(pet.fatigue), hunger: r2(pet.hunger), energy: r2(pet.energy), boredom: r2(pet.boredom),
+    location: world.location,
   };
 }
 
@@ -123,7 +124,7 @@ export class ExperienceRecorder {
   private open(kind: EpisodeKind, world: World, now: number): OpenEpisode {
     const info = clockInfo(now);
     return {
-      kind, start: now, minuteOfDay: Math.round(info.minuteOfDay), day: info.day, area: roomArea(world.pet),
+      kind, start: now, minuteOfDay: Math.round(info.minuteOfDay), day: info.day, area: areaOf(world.location, world.pet),
       light: Math.round(world.lightLevel * 100) / 100, activityBefore: Math.round(world.recentActivity * 100) / 100, subjects: new Map(),
     };
   }
@@ -160,10 +161,10 @@ export class ExperienceRecorder {
           if (focus) add('investigated', focus.kind, 0.4 - fear * 0.8, 0.5);
           break;
         case 'GET_SCARED':
-          add('scared', this.fearCause(focus?.kind ?? null), -0.7, 0.8);
+          add('scared', this.fearCause(focus?.kind ?? null, world), -0.7, 0.8);
           break;
         case 'HIDE':
-          add('hid', this.fearCause(focus?.kind ?? null), -0.4, 0.6);
+          add('hid', this.fearCause(focus?.kind ?? null, world), -0.4, 0.6);
           break;
         case 'CRY': add('cried', null, -0.6, 0.6); break;
         case 'DANCE': add('danced', null, 0.7, 0.6); break;
@@ -254,15 +255,24 @@ export class ExperienceRecorder {
     return near && world.distance(pet, near) < 0.12 ? near.kind : null;
   }
 
-  // ¿Qué lo asustó? El evento reciente más probable (física, no interpretación del cerebro)
-  private fearCause(focusKind: SubjectKey | null): SubjectKey | null {
+  // ¿Qué lo asustó? El evento reciente más probable (física, no interpretación del cerebro).
+  // v7: un sonido suave de un objeto (la caja cruje) o algo que acaba de aparecer apuntan a ESE objeto;
+  // si no hubo evento, lo que estaba mirando.
+  private fearCause(focusKind: SubjectKey | null, world?: World): SubjectKey | null {
     for (let i = this.recent.length - 1; i >= 0; i--) {
       const e = this.recent[i];
       if (e.type === 'LOUD_SOUND') return 'loudSound';
       if (e.type === 'LIGHT_OFF') return 'darkness';
-      if (e.type === 'NEW_OBJECT') return focusKind;
+      if (e.type === 'NEW_OBJECT' || e.type === 'OBJECT_APPEARED' || e.type === 'OBJECT_OPENED') return focusKind;
+      if (e.type === 'SOUND_OCCURRED' && world) {
+        const src = world.heard.find((h) => h.sourceObjectId !== null);
+        const o = src ? world.getObject(src.sourceObjectId) : null;
+        if (o) return o.kind;
+      }
     }
-    return null;
+    // Sin evento reciente: lo que estaba mirando, si es un objeto suelto que tiene delante
+    const f = world?.getObject(world.focusObjectId);
+    return f && !f.fixed && world && world.distance(world.pet, f) < 0.6 ? focusKind : null;
   }
 
   static isActiveInDark(active: readonly Action[]): boolean {

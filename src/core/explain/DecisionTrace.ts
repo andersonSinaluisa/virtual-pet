@@ -40,6 +40,7 @@ export interface DecisionTrace {
 export const EXPLAINED_ACTIONS: ReadonlySet<Action> = new Set<Action>([
   'PLAY', 'INVESTIGATE', 'PICK_UP_OBJECT', 'LOOK_AT_OBJECT', 'APPROACH', 'FOLLOW_PLAYER', 'GREET',
   'EAT', 'DRINK', 'SLEEP', 'GET_SCARED', 'HIDE', 'DANCE', 'ASK_ATTENTION',
+  'MOVE_AWAY', 'EXPLORE', // v7: alejarse de algo y salir a explorar también se explican
 ]);
 
 let counter = 0;

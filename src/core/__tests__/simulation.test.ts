@@ -43,7 +43,9 @@ describe('World perception', () => {
     s.world.callPet(1);
     const p = s.world.perceive();
     for (const v of Object.values(p)) { expect(v).toBeGreaterThanOrEqual(0); expect(v).toBeLessThanOrEqual(1); }
-    expect(p.loudSound).toBe(1);
+    // v7: el sonido llega atenuado por la distancia (el ruido suena junto al jugador, delante)
+    expect(p.loudSound).toBeGreaterThan(0.8);
+    expect(p.loudSound).toBeLessThanOrEqual(1);
     expect(p.playerCalling).toBe(1);
   });
 

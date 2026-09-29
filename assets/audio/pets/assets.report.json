@@ -1,0 +1,3137 @@
+[
+ {
+  "id": "dog_yip_01",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "EXCITED",
+   "PLAYFUL",
+   "AFFECTION"
+  ],
+  "file": "assets/audio/pets/dog/dog_yip_01.wav",
+  "durationMs": 270,
+  "loop": false,
+  "sourceId": "fs9032",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   0.02,
+   0.28
+  ],
+  "peakDb": -11.3,
+  "rmsDb": -21.0,
+  "note": null
+ },
+ {
+  "id": "dog_yip_02",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "EXCITED",
+   "PLAYFUL",
+   "AFFECTION"
+  ],
+  "file": "assets/audio/pets/dog/dog_yip_02.wav",
+  "durationMs": 240,
+  "loop": false,
+  "sourceId": "fs9032",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   0.78,
+   0.24
+  ],
+  "peakDb": -7.9,
+  "rmsDb": -21.0,
+  "note": null
+ },
+ {
+  "id": "dog_yip_03",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "EXCITED",
+   "PLAYFUL",
+   "AFFECTION"
+  ],
+  "file": "assets/audio/pets/dog/dog_yip_03.wav",
+  "durationMs": 260,
+  "loop": false,
+  "sourceId": "fs9032",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   2.1,
+   0.26
+  ],
+  "peakDb": -9.3,
+  "rmsDb": -21.0,
+  "note": null
+ },
+ {
+  "id": "dog_yip_04",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "EXCITED",
+   "PLAYFUL",
+   "AFFECTION"
+  ],
+  "file": "assets/audio/pets/dog/dog_yip_04.wav",
+  "durationMs": 250,
+  "loop": false,
+  "sourceId": "fs9031",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   0.86,
+   0.26
+  ],
+  "peakDb": -7.8,
+  "rmsDb": -21.0,
+  "note": null
+ },
+ {
+  "id": "dog_yip_05",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "EXCITED",
+   "PLAYFUL",
+   "AFFECTION"
+  ],
+  "file": "assets/audio/pets/dog/dog_yip_05.wav",
+  "durationMs": 240,
+  "loop": false,
+  "sourceId": "fs9031",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   4.04,
+   0.24
+  ],
+  "peakDb": -9.5,
+  "rmsDb": -21.0,
+  "note": null
+ },
+ {
+  "id": "dog_yip_06",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "EXCITED",
+   "PLAYFUL",
+   "AFFECTION"
+  ],
+  "file": "assets/audio/pets/dog/dog_yip_06.wav",
+  "durationMs": 260,
+  "loop": false,
+  "sourceId": "fs9031",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   10.88,
+   0.26
+  ],
+  "peakDb": -10.7,
+  "rmsDb": -21.0,
+  "note": null
+ },
+ {
+  "id": "dog_yip_07",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "EXCITED",
+   "PLAYFUL",
+   "AFFECTION"
+  ],
+  "file": "assets/audio/pets/dog/dog_yip_07.wav",
+  "durationMs": 260,
+  "loop": false,
+  "sourceId": "fs9031",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   12.46,
+   0.26
+  ],
+  "peakDb": -7.7,
+  "rmsDb": -21.0,
+  "note": null
+ },
+ {
+  "id": "dog_yipyip_01",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "EXCITED",
+   "PLAYFUL"
+  ],
+  "file": "assets/audio/pets/dog/dog_yipyip_01.wav",
+  "durationMs": 620,
+  "loop": false,
+  "sourceId": "fs9031",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   0.86,
+   0.62
+  ],
+  "peakDb": -6.2,
+  "rmsDb": -21.0,
+  "note": null
+ },
+ {
+  "id": "dog_yipyip_02",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "EXCITED",
+   "PLAYFUL"
+  ],
+  "file": "assets/audio/pets/dog/dog_yipyip_02.wav",
+  "durationMs": 720,
+  "loop": false,
+  "sourceId": "fs9031",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   10.34,
+   0.72
+  ],
+  "peakDb": -7.3,
+  "rmsDb": -21.0,
+  "note": null
+ },
+ {
+  "id": "dog_yipyip_03",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "EXCITED",
+   "PLAYFUL"
+  ],
+  "file": "assets/audio/pets/dog/dog_yipyip_03.wav",
+  "durationMs": 660,
+  "loop": false,
+  "sourceId": "fs9031",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   12.46,
+   0.66
+  ],
+  "peakDb": -6.8,
+  "rmsDb": -21.0,
+  "note": null
+ },
+ {
+  "id": "dog_bark_01",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "ALERT",
+   "EXCITED"
+  ],
+  "file": "assets/audio/pets/dog/dog_bark_01.wav",
+  "durationMs": 420,
+  "loop": false,
+  "sourceId": "fs9031",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   0.02,
+   0.42
+  ],
+  "peakDb": -7.0,
+  "rmsDb": -20.0,
+  "note": null
+ },
+ {
+  "id": "dog_bark_02",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "ALERT",
+   "EXCITED"
+  ],
+  "file": "assets/audio/pets/dog/dog_bark_02.wav",
+  "durationMs": 540,
+  "loop": false,
+  "sourceId": "fs9031",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   2.2,
+   0.54
+  ],
+  "peakDb": -7.2,
+  "rmsDb": -20.0,
+  "note": null
+ },
+ {
+  "id": "dog_whine_01",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "ATTENTION"
+  ],
+  "file": "assets/audio/pets/dog/dog_whine_01.wav",
+  "durationMs": 1230,
+  "loop": false,
+  "sourceId": "fs505827",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   0.2,
+   1.26
+  ],
+  "peakDb": -9.8,
+  "rmsDb": -24.0,
+  "note": null
+ },
+ {
+  "id": "dog_whine_02",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "ATTENTION"
+  ],
+  "file": "assets/audio/pets/dog/dog_whine_02.wav",
+  "durationMs": 1520,
+  "loop": false,
+  "sourceId": "fs505827",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   2.84,
+   1.52
+  ],
+  "peakDb": -10.4,
+  "rmsDb": -24.0,
+  "note": null
+ },
+ {
+  "id": "dog_whine_03",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "ATTENTION"
+  ],
+  "file": "assets/audio/pets/dog/dog_whine_03.wav",
+  "durationMs": 1360,
+  "loop": false,
+  "sourceId": "fs505827",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   6.1,
+   1.36
+  ],
+  "peakDb": -13.3,
+  "rmsDb": -24.0,
+  "note": null
+ },
+ {
+  "id": "dog_whine_04",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "ATTENTION"
+  ],
+  "file": "assets/audio/pets/dog/dog_whine_04.wav",
+  "durationMs": 860,
+  "loop": false,
+  "sourceId": "fs505827",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   10.16,
+   0.86
+  ],
+  "peakDb": -14.7,
+  "rmsDb": -24.0,
+  "note": null
+ },
+ {
+  "id": "dog_whine_05",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "ATTENTION"
+  ],
+  "file": "assets/audio/pets/dog/dog_whine_05.wav",
+  "durationMs": 810,
+  "loop": false,
+  "sourceId": "fs752093",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   0.68,
+   0.84
+  ],
+  "peakDb": -11.7,
+  "rmsDb": -24.0,
+  "note": null
+ },
+ {
+  "id": "dog_whimper_01",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "SCARED",
+   "UNCOMFORTABLE"
+  ],
+  "file": "assets/audio/pets/dog/dog_whimper_01.wav",
+  "durationMs": 387,
+  "loop": false,
+  "sourceId": "fs505827",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   14.6,
+   0.44
+  ],
+  "peakDb": -17.6,
+  "rmsDb": -27.8,
+  "note": null
+ },
+ {
+  "id": "dog_whimper_02",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "SCARED",
+   "UNCOMFORTABLE"
+  ],
+  "file": "assets/audio/pets/dog/dog_whimper_02.wav",
+  "durationMs": 620,
+  "loop": false,
+  "sourceId": "fs505827",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   12.5,
+   0.62
+  ],
+  "peakDb": -13.5,
+  "rmsDb": -27.8,
+  "note": null
+ },
+ {
+  "id": "dog_whimper_03",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "UNCOMFORTABLE"
+  ],
+  "file": "assets/audio/pets/dog/dog_whimper_03.wav",
+  "durationMs": 860,
+  "loop": false,
+  "sourceId": "fs505827",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   10.16,
+   0.86
+  ],
+  "peakDb": -18.7,
+  "rmsDb": -28.0,
+  "note": null
+ },
+ {
+  "id": "dog_growl_play_01",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "PLAYFUL"
+  ],
+  "file": "assets/audio/pets/dog/dog_growl_play_01.wav",
+  "durationMs": 520,
+  "loop": false,
+  "sourceId": "fs401820",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   1.06,
+   0.56
+  ],
+  "peakDb": -13.6,
+  "rmsDb": -25.0,
+  "note": null
+ },
+ {
+  "id": "dog_growl_play_02",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "PLAYFUL"
+  ],
+  "file": "assets/audio/pets/dog/dog_growl_play_02.wav",
+  "durationMs": 580,
+  "loop": false,
+  "sourceId": "fs401820",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   6.06,
+   0.58
+  ],
+  "peakDb": -12.9,
+  "rmsDb": -25.0,
+  "note": null
+ },
+ {
+  "id": "dog_growl_play_03",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "PLAYFUL"
+  ],
+  "file": "assets/audio/pets/dog/dog_growl_play_03.wav",
+  "durationMs": 970,
+  "loop": false,
+  "sourceId": "fs401820",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   7.2,
+   1.0
+  ],
+  "peakDb": -14.4,
+  "rmsDb": -25.1,
+  "note": null
+ },
+ {
+  "id": "dog_sniff_01",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "CURIOUS"
+  ],
+  "file": "assets/audio/pets/dog/dog_sniff_01.wav",
+  "durationMs": 1200,
+  "loop": false,
+  "sourceId": "fs137981",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   6.38,
+   1.2
+  ],
+  "peakDb": -1.0,
+  "rmsDb": -30.1,
+  "note": null
+ },
+ {
+  "id": "dog_sniff_02",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "CURIOUS"
+  ],
+  "file": "assets/audio/pets/dog/dog_sniff_02.wav",
+  "durationMs": 1220,
+  "loop": false,
+  "sourceId": "fs137981",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   28.52,
+   1.3
+  ],
+  "peakDb": -6.6,
+  "rmsDb": -26.0,
+  "note": null
+ },
+ {
+  "id": "dog_sniff_03",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "CURIOUS"
+  ],
+  "file": "assets/audio/pets/dog/dog_sniff_03.wav",
+  "durationMs": 800,
+  "loop": false,
+  "sourceId": "fs137981",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   11.34,
+   0.8
+  ],
+  "peakDb": -6.8,
+  "rmsDb": -25.8,
+  "note": null
+ },
+ {
+  "id": "dog_sniff_04",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "CURIOUS"
+  ],
+  "file": "assets/audio/pets/dog/dog_sniff_04.wav",
+  "durationMs": 900,
+  "loop": false,
+  "sourceId": "fs137981",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   31.88,
+   0.9
+  ],
+  "peakDb": -9.5,
+  "rmsDb": -25.9,
+  "note": null
+ },
+ {
+  "id": "dog_sigh_01",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "RELAXED",
+   "SLEEPY"
+  ],
+  "file": "assets/audio/pets/dog/dog_sigh_01.wav",
+  "durationMs": 1000,
+  "loop": false,
+  "sourceId": "fs137981",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   23.94,
+   1.0
+  ],
+  "peakDb": -10.7,
+  "rmsDb": -25.9,
+  "note": null
+ },
+ {
+  "id": "dog_sigh_02",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "RELAXED",
+   "SLEEPY"
+  ],
+  "file": "assets/audio/pets/dog/dog_sigh_02.wav",
+  "durationMs": 1140,
+  "loop": false,
+  "sourceId": "fs137981",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   25.08,
+   1.3
+  ],
+  "peakDb": -11.4,
+  "rmsDb": -26.0,
+  "note": null
+ },
+ {
+  "id": "dog_sigh_03",
+  "species": "dog",
+  "kind": "vocal",
+  "intents": [
+   "RELAXED",
+   "SLEEPY"
+  ],
+  "file": "assets/audio/pets/dog/dog_sigh_03.wav",
+  "durationMs": 800,
+  "loop": false,
+  "sourceId": "fs137981",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   41.32,
+   0.8
+  ],
+  "peakDb": -9.8,
+  "rmsDb": -26.0,
+  "note": null
+ },
+ {
+  "id": "dog_pant_loop",
+  "species": "dog",
+  "kind": "layer",
+  "intents": [
+   "AFFECTION",
+   "PLAYFUL"
+  ],
+  "file": "assets/audio/pets/dog/dog_pant_loop.wav",
+  "durationMs": 8000,
+  "loop": true,
+  "sourceId": "fs181767",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   1.0,
+   8.0
+  ],
+  "peakDb": -6.8,
+  "rmsDb": -27.3,
+  "note": null
+ },
+ {
+  "id": "dog_sleep_loop",
+  "species": "dog",
+  "kind": "layer",
+  "intents": [
+   "SLEEPING"
+  ],
+  "file": "assets/audio/pets/dog/dog_sleep_loop.wav",
+  "durationMs": 20000,
+  "loop": true,
+  "sourceId": "fs482998",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   60.0,
+   20.0
+  ],
+  "peakDb": -11.8,
+  "rmsDb": -30.9,
+  "note": null
+ },
+ {
+  "id": "dog_drink_loop",
+  "species": "dog",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/dog/dog_drink_loop.wav",
+  "durationMs": 6000,
+  "loop": true,
+  "sourceId": "fs401821",
+  "stages": null,
+  "foley": "drink",
+  "rate": 1,
+  "segment": [
+   6.0,
+   6.0
+  ],
+  "peakDb": -5.2,
+  "rmsDb": -27.9,
+  "note": null
+ },
+ {
+  "id": "cat_meow_short_01",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY"
+  ],
+  "file": "assets/audio/pets/cat/cat_meow_short_01.wav",
+  "durationMs": 1320,
+  "loop": false,
+  "sourceId": "ba-meow-food-time-1",
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ],
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   null,
+   null
+  ],
+  "peakDb": -6.4,
+  "rmsDb": -23.0,
+  "note": null
+ },
+ {
+  "id": "cat_meow_short_02",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY"
+  ],
+  "file": "assets/audio/pets/cat/cat_meow_short_02.wav",
+  "durationMs": 1190,
+  "loop": false,
+  "sourceId": "ba-meow-food-time-3",
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ],
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   null,
+   null
+  ],
+  "peakDb": -10.4,
+  "rmsDb": -23.0,
+  "note": null
+ },
+ {
+  "id": "cat_meow_short_03",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY"
+  ],
+  "file": "assets/audio/pets/cat/cat_meow_short_03.wav",
+  "durationMs": 590,
+  "loop": false,
+  "sourceId": "ba-meow-food-time-11",
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ],
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   null,
+   null
+  ],
+  "peakDb": -13.6,
+  "rmsDb": -22.7,
+  "note": null
+ },
+ {
+  "id": "cat_meow_short_04",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY"
+  ],
+  "file": "assets/audio/pets/cat/cat_meow_short_04.wav",
+  "durationMs": 660,
+  "loop": false,
+  "sourceId": "ba-meow-food-time-12",
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ],
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   null,
+   null
+  ],
+  "peakDb": -13.3,
+  "rmsDb": -23.0,
+  "note": null
+ },
+ {
+  "id": "cat_meow_short_05",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY"
+  ],
+  "file": "assets/audio/pets/cat/cat_meow_short_05.wav",
+  "durationMs": 600,
+  "loop": false,
+  "sourceId": "ba-meow-food-time-16",
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ],
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   null,
+   null
+  ],
+  "peakDb": -10.7,
+  "rmsDb": -22.9,
+  "note": null
+ },
+ {
+  "id": "cat_meow_short_06",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY"
+  ],
+  "file": "assets/audio/pets/cat/cat_meow_short_06.wav",
+  "durationMs": 790,
+  "loop": false,
+  "sourceId": "ba-meow-food-time-8",
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ],
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   null,
+   null
+  ],
+  "peakDb": -8.7,
+  "rmsDb": -23.0,
+  "note": null
+ },
+ {
+  "id": "cat_meow_short_07",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY"
+  ],
+  "file": "assets/audio/pets/cat/cat_meow_short_07.wav",
+  "durationMs": 290,
+  "loop": false,
+  "sourceId": "ba-meow-tiny-tito",
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ],
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   null,
+   null
+  ],
+  "peakDb": -9.1,
+  "rmsDb": -23.2,
+  "note": null
+ },
+ {
+  "id": "cat_meow_short_08",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY"
+  ],
+  "file": "assets/audio/pets/cat/cat_meow_short_08.wav",
+  "durationMs": 1020,
+  "loop": false,
+  "sourceId": "ba-meow-trevor",
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ],
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   null,
+   null
+  ],
+  "peakDb": -1.0,
+  "rmsDb": -26.4,
+  "note": null
+ },
+ {
+  "id": "cat_meow_01",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "ATTENTION"
+  ],
+  "file": "assets/audio/pets/cat/cat_meow_01.wav",
+  "durationMs": 1000,
+  "loop": false,
+  "sourceId": "ba-meow-food-time-4",
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ],
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   null,
+   null
+  ],
+  "peakDb": -10.7,
+  "rmsDb": -23.0,
+  "note": null
+ },
+ {
+  "id": "cat_meow_02",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "ATTENTION",
+   "UNCOMFORTABLE"
+  ],
+  "file": "assets/audio/pets/cat/cat_meow_02.wav",
+  "durationMs": 1030,
+  "loop": false,
+  "sourceId": "ba-meow-food-time-5",
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ],
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   null,
+   null
+  ],
+  "peakDb": -13.1,
+  "rmsDb": -23.0,
+  "note": null
+ },
+ {
+  "id": "cat_meow_03",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "ATTENTION"
+  ],
+  "file": "assets/audio/pets/cat/cat_meow_03.wav",
+  "durationMs": 800,
+  "loop": false,
+  "sourceId": "ba-meow-food-time-6",
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ],
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   null,
+   null
+  ],
+  "peakDb": -9.8,
+  "rmsDb": -23.0,
+  "note": null
+ },
+ {
+  "id": "cat_meow_04",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "ATTENTION"
+  ],
+  "file": "assets/audio/pets/cat/cat_meow_04.wav",
+  "durationMs": 1100,
+  "loop": false,
+  "sourceId": "ba-meow-food-time-9",
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ],
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   null,
+   null
+  ],
+  "peakDb": -10.6,
+  "rmsDb": -22.9,
+  "note": null
+ },
+ {
+  "id": "cat_meow_05",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "ATTENTION"
+  ],
+  "file": "assets/audio/pets/cat/cat_meow_05.wav",
+  "durationMs": 780,
+  "loop": false,
+  "sourceId": "ba-meow-food-time-10",
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ],
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   null,
+   null
+  ],
+  "peakDb": -11.7,
+  "rmsDb": -23.0,
+  "note": null
+ },
+ {
+  "id": "cat_meow_06",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "ATTENTION"
+  ],
+  "file": "assets/audio/pets/cat/cat_meow_06.wav",
+  "durationMs": 1000,
+  "loop": false,
+  "sourceId": "ba-meow-food-time-13",
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ],
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   null,
+   null
+  ],
+  "peakDb": -12.2,
+  "rmsDb": -22.8,
+  "note": null
+ },
+ {
+  "id": "cat_meow_07",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "ATTENTION"
+  ],
+  "file": "assets/audio/pets/cat/cat_meow_07.wav",
+  "durationMs": 2330,
+  "loop": false,
+  "sourceId": "ba-meow-food-time-14",
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ],
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   null,
+   null
+  ],
+  "peakDb": -9.6,
+  "rmsDb": -23.0,
+  "note": null
+ },
+ {
+  "id": "cat_meow_08",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "ATTENTION"
+  ],
+  "file": "assets/audio/pets/cat/cat_meow_08.wav",
+  "durationMs": 2310,
+  "loop": false,
+  "sourceId": "ba-meow-food-time-15",
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ],
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   null,
+   null
+  ],
+  "peakDb": -8.5,
+  "rmsDb": -23.0,
+  "note": null
+ },
+ {
+  "id": "cat_meow_09",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "ATTENTION"
+  ],
+  "file": "assets/audio/pets/cat/cat_meow_09.wav",
+  "durationMs": 2510,
+  "loop": false,
+  "sourceId": "ba-meow-food-time-17",
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ],
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   null,
+   null
+  ],
+  "peakDb": -8.6,
+  "rmsDb": -23.0,
+  "note": null
+ },
+ {
+  "id": "cat_meow_soft_01",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "AFFECTION",
+   "UNCOMFORTABLE"
+  ],
+  "file": "assets/audio/pets/cat/cat_meow_soft_01.wav",
+  "durationMs": 572,
+  "loop": false,
+  "sourceId": "fs436541",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   0.0,
+   0.6
+  ],
+  "peakDb": -13.6,
+  "rmsDb": -25.0,
+  "note": null
+ },
+ {
+  "id": "cat_meow_soft_02",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "ATTENTION"
+  ],
+  "file": "assets/audio/pets/cat/cat_meow_soft_02.wav",
+  "durationMs": 600,
+  "loop": false,
+  "sourceId": "fs262312",
+  "stages": [
+   "YOUNG",
+   "ADULT"
+  ],
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   0.0,
+   0.65
+  ],
+  "peakDb": -13.3,
+  "rmsDb": -24.0,
+  "note": null
+ },
+ {
+  "id": "cat_kitten_01",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "ATTENTION",
+   "HAPPY"
+  ],
+  "file": "assets/audio/pets/cat/cat_kitten_01.wav",
+  "durationMs": 620,
+  "loop": false,
+  "sourceId": "fs196251",
+  "stages": [
+   "BABY",
+   "CHILD"
+  ],
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   0.38,
+   0.68
+  ],
+  "peakDb": -11.3,
+  "rmsDb": -24.0,
+  "note": null
+ },
+ {
+  "id": "cat_kitten_02",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "ATTENTION",
+   "HAPPY"
+  ],
+  "file": "assets/audio/pets/cat/cat_kitten_02.wav",
+  "durationMs": 620,
+  "loop": false,
+  "sourceId": "fs196251",
+  "stages": [
+   "BABY",
+   "CHILD"
+  ],
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   1.48,
+   0.62
+  ],
+  "peakDb": -12.0,
+  "rmsDb": -24.0,
+  "note": null
+ },
+ {
+  "id": "cat_kitten_03",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "ATTENTION",
+   "HAPPY"
+  ],
+  "file": "assets/audio/pets/cat/cat_kitten_03.wav",
+  "durationMs": 720,
+  "loop": false,
+  "sourceId": "fs196251",
+  "stages": [
+   "BABY",
+   "CHILD"
+  ],
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   4.74,
+   0.76
+  ],
+  "peakDb": -13.5,
+  "rmsDb": -24.0,
+  "note": null
+ },
+ {
+  "id": "cat_kitten_04",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "ATTENTION",
+   "HAPPY"
+  ],
+  "file": "assets/audio/pets/cat/cat_kitten_04.wav",
+  "durationMs": 580,
+  "loop": false,
+  "sourceId": "fs196251",
+  "stages": [
+   "BABY",
+   "CHILD"
+  ],
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   7.14,
+   0.58
+  ],
+  "peakDb": -15.1,
+  "rmsDb": -24.0,
+  "note": null
+ },
+ {
+  "id": "cat_trill_01",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "AFFECTION",
+   "PLAYFUL"
+  ],
+  "file": "assets/audio/pets/cat/cat_trill_01.wav",
+  "durationMs": 700,
+  "loop": false,
+  "sourceId": "fs200336",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   3.42,
+   0.76
+  ],
+  "peakDb": -9.5,
+  "rmsDb": -24.0,
+  "note": null
+ },
+ {
+  "id": "cat_trill_02",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "AFFECTION",
+   "PLAYFUL"
+  ],
+  "file": "assets/audio/pets/cat/cat_trill_02.wav",
+  "durationMs": 600,
+  "loop": false,
+  "sourceId": "fs200336",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   6.06,
+   0.6
+  ],
+  "peakDb": -11.4,
+  "rmsDb": -23.8,
+  "note": null
+ },
+ {
+  "id": "cat_trill_03",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "AFFECTION",
+   "PLAYFUL"
+  ],
+  "file": "assets/audio/pets/cat/cat_trill_03.wav",
+  "durationMs": 670,
+  "loop": false,
+  "sourceId": "fs200336",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   7.68,
+   0.68
+  ],
+  "peakDb": -11.0,
+  "rmsDb": -24.0,
+  "note": null
+ },
+ {
+  "id": "cat_trill_04",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "AFFECTION",
+   "PLAYFUL"
+  ],
+  "file": "assets/audio/pets/cat/cat_trill_04.wav",
+  "durationMs": 420,
+  "loop": false,
+  "sourceId": "fs200336",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   9.86,
+   0.42
+  ],
+  "peakDb": -10.8,
+  "rmsDb": -24.0,
+  "note": null
+ },
+ {
+  "id": "cat_trill_05",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "AFFECTION",
+   "PLAYFUL"
+  ],
+  "file": "assets/audio/pets/cat/cat_trill_05.wav",
+  "durationMs": 640,
+  "loop": false,
+  "sourceId": "fs200336",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   0.08,
+   0.64
+  ],
+  "peakDb": -14.0,
+  "rmsDb": -24.0,
+  "note": null
+ },
+ {
+  "id": "cat_trill_06",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY"
+  ],
+  "file": "assets/audio/pets/cat/cat_trill_06.wav",
+  "durationMs": 486,
+  "loop": false,
+  "sourceId": "fs262310",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   0.0,
+   0.52
+  ],
+  "peakDb": -11.9,
+  "rmsDb": -24.0,
+  "note": null
+ },
+ {
+  "id": "cat_trill_07",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY"
+  ],
+  "file": "assets/audio/pets/cat/cat_trill_07.wav",
+  "durationMs": 419,
+  "loop": false,
+  "sourceId": "fs262311",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   0.0,
+   0.47
+  ],
+  "peakDb": -13.4,
+  "rmsDb": -24.0,
+  "note": null
+ },
+ {
+  "id": "cat_trill_08",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "AFFECTION"
+  ],
+  "file": "assets/audio/pets/cat/cat_trill_08.wav",
+  "durationMs": 535,
+  "loop": false,
+  "sourceId": "fs262307",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   0.0,
+   0.57
+  ],
+  "peakDb": -13.0,
+  "rmsDb": -24.0,
+  "note": null
+ },
+ {
+  "id": "cat_whirr_01",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "HAPPY",
+   "EXCITED",
+   "PLAYFUL"
+  ],
+  "file": "assets/audio/pets/cat/cat_whirr_01.wav",
+  "durationMs": 710,
+  "loop": false,
+  "sourceId": "fs415107",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   0.1,
+   0.75
+  ],
+  "peakDb": -7.8,
+  "rmsDb": -23.0,
+  "note": null
+ },
+ {
+  "id": "cat_chirp_01",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "CURIOUS",
+   "PLAYFUL",
+   "ALERT"
+  ],
+  "file": "assets/audio/pets/cat/cat_chirp_01.wav",
+  "durationMs": 260,
+  "loop": false,
+  "sourceId": "fs451250",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   0.54,
+   0.28
+  ],
+  "peakDb": -13.6,
+  "rmsDb": -25.0,
+  "note": null
+ },
+ {
+  "id": "cat_chirp_02",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "CURIOUS",
+   "PLAYFUL"
+  ],
+  "file": "assets/audio/pets/cat/cat_chirp_02.wav",
+  "durationMs": 540,
+  "loop": false,
+  "sourceId": "fs451250",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   4.88,
+   0.54
+  ],
+  "peakDb": -8.0,
+  "rmsDb": -24.9,
+  "note": null
+ },
+ {
+  "id": "cat_hiss_soft_01",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "SCARED"
+  ],
+  "file": "assets/audio/pets/cat/cat_hiss_soft_01.wav",
+  "durationMs": 500,
+  "loop": false,
+  "sourceId": "fs532226",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   4.96,
+   0.5
+  ],
+  "peakDb": -13.5,
+  "rmsDb": -31.0,
+  "note": null
+ },
+ {
+  "id": "cat_sniff_01",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "CURIOUS"
+  ],
+  "file": "assets/audio/pets/cat/cat_sniff_01.wav",
+  "durationMs": 1000,
+  "loop": false,
+  "sourceId": "fs418161",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   2.0,
+   1.0
+  ],
+  "peakDb": -12.9,
+  "rmsDb": -27.9,
+  "note": null
+ },
+ {
+  "id": "cat_sniff_02",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "CURIOUS"
+  ],
+  "file": "assets/audio/pets/cat/cat_sniff_02.wav",
+  "durationMs": 990,
+  "loop": false,
+  "sourceId": "fs418161",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   3.0,
+   1.0
+  ],
+  "peakDb": -13.5,
+  "rmsDb": -28.1,
+  "note": null
+ },
+ {
+  "id": "cat_sniff_03",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "CURIOUS"
+  ],
+  "file": "assets/audio/pets/cat/cat_sniff_03.wav",
+  "durationMs": 400,
+  "loop": false,
+  "sourceId": "fs801809",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   2.94,
+   0.4
+  ],
+  "peakDb": -4.4,
+  "rmsDb": -27.8,
+  "note": null
+ },
+ {
+  "id": "cat_yawn_01",
+  "species": "cat",
+  "kind": "vocal",
+  "intents": [
+   "SLEEPY"
+  ],
+  "file": "assets/audio/pets/cat/cat_yawn_01.wav",
+  "durationMs": 760,
+  "loop": false,
+  "sourceId": "fs841188",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   0.0,
+   0.76
+  ],
+  "peakDb": -3.1,
+  "rmsDb": -26.0,
+  "note": null
+ },
+ {
+  "id": "cat_purr_loop_01",
+  "species": "cat",
+  "kind": "layer",
+  "intents": [
+   "AFFECTION",
+   "RELAXED"
+  ],
+  "file": "assets/audio/pets/cat/cat_purr_loop_01.wav",
+  "durationMs": 24000,
+  "loop": true,
+  "sourceId": "fs650575",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   0.0,
+   24.0
+  ],
+  "peakDb": -3.3,
+  "rmsDb": -24.0,
+  "note": null
+ },
+ {
+  "id": "cat_purr_loop_02",
+  "species": "cat",
+  "kind": "layer",
+  "intents": [
+   "AFFECTION",
+   "RELAXED"
+  ],
+  "file": "assets/audio/pets/cat/cat_purr_loop_02.wav",
+  "durationMs": 20000,
+  "loop": true,
+  "sourceId": "fs130968",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   2.0,
+   20.0
+  ],
+  "peakDb": -1.0,
+  "rmsDb": -26.7,
+  "note": null
+ },
+ {
+  "id": "cat_sleep_loop",
+  "species": "cat",
+  "kind": "layer",
+  "intents": [
+   "SLEEPING"
+  ],
+  "file": "assets/audio/pets/cat/cat_sleep_loop.wav",
+  "durationMs": 24000,
+  "loop": true,
+  "sourceId": "fs811963",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   10.0,
+   24.0
+  ],
+  "peakDb": -14.4,
+  "rmsDb": -31.0,
+  "note": null
+ },
+ {
+  "id": "bear_gurgle_01",
+  "species": "bear",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "AFFECTION",
+   "RELAXED",
+   "PLAYFUL"
+  ],
+  "file": "assets/audio/pets/bear/bear_gurgle_01.wav",
+  "durationMs": 500,
+  "loop": false,
+  "sourceId": "fs249443",
+  "stages": null,
+  "foley": null,
+  "rate": 1.12,
+  "segment": [
+   43.9,
+   0.56
+  ],
+  "peakDb": -9.8,
+  "rmsDb": -22.2,
+  "note": null
+ },
+ {
+  "id": "bear_gurgle_02",
+  "species": "bear",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "AFFECTION",
+   "RELAXED",
+   "PLAYFUL"
+  ],
+  "file": "assets/audio/pets/bear/bear_gurgle_02.wav",
+  "durationMs": 893,
+  "loop": false,
+  "sourceId": "fs249443",
+  "stages": null,
+  "foley": null,
+  "rate": 1.12,
+  "segment": [
+   45.4,
+   1.0
+  ],
+  "peakDb": -9.3,
+  "rmsDb": -22.1,
+  "note": null
+ },
+ {
+  "id": "bear_gurgle_03",
+  "species": "bear",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "AFFECTION",
+   "RELAXED",
+   "PLAYFUL",
+   "SLEEPY"
+  ],
+  "file": "assets/audio/pets/bear/bear_gurgle_03.wav",
+  "durationMs": 375,
+  "loop": false,
+  "sourceId": "fs249443",
+  "stages": null,
+  "foley": null,
+  "rate": 1.12,
+  "segment": [
+   48.06,
+   0.42
+  ],
+  "peakDb": -9.7,
+  "rmsDb": -22.2,
+  "note": null
+ },
+ {
+  "id": "bear_gurgle_04",
+  "species": "bear",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "AFFECTION",
+   "RELAXED",
+   "PLAYFUL"
+  ],
+  "file": "assets/audio/pets/bear/bear_gurgle_04.wav",
+  "durationMs": 393,
+  "loop": false,
+  "sourceId": "fs249443",
+  "stages": null,
+  "foley": null,
+  "rate": 1.12,
+  "segment": [
+   49.1,
+   0.44
+  ],
+  "peakDb": -11.2,
+  "rmsDb": -22.1,
+  "note": null
+ },
+ {
+  "id": "bear_gurgle_05",
+  "species": "bear",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "AFFECTION",
+   "RELAXED",
+   "PLAYFUL"
+  ],
+  "file": "assets/audio/pets/bear/bear_gurgle_05.wav",
+  "durationMs": 375,
+  "loop": false,
+  "sourceId": "fs249443",
+  "stages": null,
+  "foley": null,
+  "rate": 1.12,
+  "segment": [
+   50.62,
+   0.42
+  ],
+  "peakDb": -11.1,
+  "rmsDb": -22.1,
+  "note": null
+ },
+ {
+  "id": "bear_gurgle_06",
+  "species": "bear",
+  "kind": "vocal",
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "AFFECTION",
+   "RELAXED",
+   "PLAYFUL",
+   "SLEEPY"
+  ],
+  "file": "assets/audio/pets/bear/bear_gurgle_06.wav",
+  "durationMs": 679,
+  "loop": false,
+  "sourceId": "fs249443",
+  "stages": null,
+  "foley": null,
+  "rate": 1.12,
+  "segment": [
+   15.16,
+   0.76
+  ],
+  "peakDb": -10.5,
+  "rmsDb": -22.1,
+  "note": null
+ },
+ {
+  "id": "bear_cub_call_01",
+  "species": "bear",
+  "kind": "vocal",
+  "intents": [
+   "ATTENTION",
+   "EXCITED"
+  ],
+  "file": "assets/audio/pets/bear/bear_cub_call_01.wav",
+  "durationMs": 979,
+  "loop": false,
+  "sourceId": "fs249442",
+  "stages": null,
+  "foley": null,
+  "rate": 1.08,
+  "segment": [
+   26.86,
+   1.1
+  ],
+  "peakDb": -12.3,
+  "rmsDb": -24.0,
+  "note": null
+ },
+ {
+  "id": "bear_cub_call_02",
+  "species": "bear",
+  "kind": "vocal",
+  "intents": [
+   "ATTENTION",
+   "EXCITED"
+  ],
+  "file": "assets/audio/pets/bear/bear_cub_call_02.wav",
+  "durationMs": 1144,
+  "loop": false,
+  "sourceId": "fs249442",
+  "stages": null,
+  "foley": null,
+  "rate": 1.08,
+  "segment": [
+   37.84,
+   1.3
+  ],
+  "peakDb": -10.0,
+  "rmsDb": -24.1,
+  "note": null
+ },
+ {
+  "id": "bear_cub_call_03",
+  "species": "bear",
+  "kind": "vocal",
+  "intents": [
+   "ATTENTION",
+   "EXCITED"
+  ],
+  "file": "assets/audio/pets/bear/bear_cub_call_03.wav",
+  "durationMs": 506,
+  "loop": false,
+  "sourceId": "fs249442",
+  "stages": null,
+  "foley": null,
+  "rate": 1.08,
+  "segment": [
+   22.36,
+   0.6
+  ],
+  "peakDb": -15.5,
+  "rmsDb": -24.0,
+  "note": null
+ },
+ {
+  "id": "bear_cub_call_04",
+  "species": "bear",
+  "kind": "vocal",
+  "intents": [
+   "ATTENTION",
+   "EXCITED"
+  ],
+  "file": "assets/audio/pets/bear/bear_cub_call_04.wav",
+  "durationMs": 634,
+  "loop": false,
+  "sourceId": "fs249442",
+  "stages": null,
+  "foley": null,
+  "rate": 1.08,
+  "segment": [
+   28.9,
+   0.76
+  ],
+  "peakDb": -12.3,
+  "rmsDb": -24.1,
+  "note": null
+ },
+ {
+  "id": "bear_whimper_01",
+  "species": "bear",
+  "kind": "vocal",
+  "intents": [
+   "SCARED",
+   "UNCOMFORTABLE"
+  ],
+  "file": "assets/audio/pets/bear/bear_whimper_01.wav",
+  "durationMs": 222,
+  "loop": false,
+  "sourceId": "fs249442",
+  "stages": null,
+  "foley": null,
+  "rate": 1.08,
+  "segment": [
+   9.36,
+   0.24
+  ],
+  "peakDb": -12.1,
+  "rmsDb": -27.5,
+  "note": null
+ },
+ {
+  "id": "bear_whimper_02",
+  "species": "bear",
+  "kind": "vocal",
+  "intents": [
+   "SCARED",
+   "UNCOMFORTABLE"
+  ],
+  "file": "assets/audio/pets/bear/bear_whimper_02.wav",
+  "durationMs": 241,
+  "loop": false,
+  "sourceId": "fs249442",
+  "stages": null,
+  "foley": null,
+  "rate": 1.08,
+  "segment": [
+   12.7,
+   0.26
+  ],
+  "peakDb": -15.4,
+  "rmsDb": -28.2,
+  "note": null
+ },
+ {
+  "id": "bear_sniff_01",
+  "species": "bear",
+  "kind": "vocal",
+  "intents": [
+   "CURIOUS"
+  ],
+  "file": "assets/audio/pets/bear/bear_sniff_01.wav",
+  "durationMs": 1200,
+  "loop": false,
+  "sourceId": "fs249440",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   5.24,
+   1.2
+  ],
+  "peakDb": -14.5,
+  "rmsDb": -26.1,
+  "note": null
+ },
+ {
+  "id": "bear_sniff_02",
+  "species": "bear",
+  "kind": "vocal",
+  "intents": [
+   "CURIOUS"
+  ],
+  "file": "assets/audio/pets/bear/bear_sniff_02.wav",
+  "durationMs": 1140,
+  "loop": false,
+  "sourceId": "fs249440",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   14.82,
+   1.2
+  ],
+  "peakDb": -8.9,
+  "rmsDb": -26.1,
+  "note": null
+ },
+ {
+  "id": "bear_sniff_03",
+  "species": "bear",
+  "kind": "vocal",
+  "intents": [
+   "CURIOUS",
+   "ALERT"
+  ],
+  "file": "assets/audio/pets/bear/bear_sniff_03.wav",
+  "durationMs": 280,
+  "loop": false,
+  "sourceId": "fs249440",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   10.86,
+   0.36
+  ],
+  "peakDb": -11.4,
+  "rmsDb": -26.2,
+  "note": null
+ },
+ {
+  "id": "bear_sniff_04",
+  "species": "bear",
+  "kind": "vocal",
+  "intents": [
+   "CURIOUS",
+   "ALERT"
+  ],
+  "file": "assets/audio/pets/bear/bear_sniff_04.wav",
+  "durationMs": 400,
+  "loop": false,
+  "sourceId": "fs249440",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   12.02,
+   0.4
+  ],
+  "peakDb": -11.2,
+  "rmsDb": -25.9,
+  "note": null
+ },
+ {
+  "id": "bear_sleep_loop",
+  "species": "bear",
+  "kind": "layer",
+  "intents": [
+   "SLEEPING"
+  ],
+  "file": "assets/audio/pets/bear/bear_sleep_loop.wav",
+  "durationMs": 24390,
+  "loop": true,
+  "sourceId": "fs482998",
+  "stages": null,
+  "foley": null,
+  "rate": 0.82,
+  "segment": [
+   100.0,
+   20.0
+  ],
+  "peakDb": -11.4,
+  "rmsDb": -30.8,
+  "note": "Respiración de perro dormido con el tono bajado (no hay ronquidos de oso con licencia apta)."
+ },
+ {
+  "id": "rabbit_purr_loop_01",
+  "species": "rabbit",
+  "kind": "layer",
+  "intents": [
+   "AFFECTION",
+   "RELAXED"
+  ],
+  "file": "assets/audio/pets/rabbit/rabbit_purr_loop_01.wav",
+  "durationMs": 12000,
+  "loop": true,
+  "sourceId": "fs205575",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   0.5,
+   12.0
+  ],
+  "peakDb": -12.9,
+  "rmsDb": -32.0,
+  "note": null
+ },
+ {
+  "id": "rabbit_purr_loop_02",
+  "species": "rabbit",
+  "kind": "layer",
+  "intents": [
+   "AFFECTION",
+   "RELAXED"
+  ],
+  "file": "assets/audio/pets/rabbit/rabbit_purr_loop_02.wav",
+  "durationMs": 12000,
+  "loop": true,
+  "sourceId": "fs205574",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   0.5,
+   12.0
+  ],
+  "peakDb": -17.2,
+  "rmsDb": -31.9,
+  "note": null
+ },
+ {
+  "id": "rabbit_snuffle_01",
+  "species": "rabbit",
+  "kind": "vocal",
+  "intents": [
+   "CURIOUS",
+   "GREETING"
+  ],
+  "file": "assets/audio/pets/rabbit/rabbit_snuffle_01.wav",
+  "durationMs": 460,
+  "loop": false,
+  "sourceId": "fs205572",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   1.14,
+   0.46
+  ],
+  "peakDb": -16.4,
+  "rmsDb": -30.1,
+  "note": null
+ },
+ {
+  "id": "rabbit_snuffle_02",
+  "species": "rabbit",
+  "kind": "vocal",
+  "intents": [
+   "CURIOUS",
+   "GREETING"
+  ],
+  "file": "assets/audio/pets/rabbit/rabbit_snuffle_02.wav",
+  "durationMs": 220,
+  "loop": false,
+  "sourceId": "fs205572",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   2.38,
+   0.22
+  ],
+  "peakDb": -21.1,
+  "rmsDb": -30.0,
+  "note": null
+ },
+ {
+  "id": "rabbit_snuffle_03",
+  "species": "rabbit",
+  "kind": "vocal",
+  "intents": [
+   "CURIOUS",
+   "GREETING"
+  ],
+  "file": "assets/audio/pets/rabbit/rabbit_snuffle_03.wav",
+  "durationMs": 600,
+  "loop": false,
+  "sourceId": "fs205572",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   6.42,
+   0.6
+  ],
+  "peakDb": -12.3,
+  "rmsDb": -30.0,
+  "note": null
+ },
+ {
+  "id": "rabbit_snuffle_04",
+  "species": "rabbit",
+  "kind": "vocal",
+  "intents": [
+   "CURIOUS",
+   "GREETING"
+  ],
+  "file": "assets/audio/pets/rabbit/rabbit_snuffle_04.wav",
+  "durationMs": 320,
+  "loop": false,
+  "sourceId": "fs205572",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   7.86,
+   0.32
+  ],
+  "peakDb": -15.4,
+  "rmsDb": -30.0,
+  "note": null
+ },
+ {
+  "id": "rabbit_snuffle_05",
+  "species": "rabbit",
+  "kind": "vocal",
+  "intents": [
+   "CURIOUS",
+   "GREETING"
+  ],
+  "file": "assets/audio/pets/rabbit/rabbit_snuffle_05.wav",
+  "durationMs": 780,
+  "loop": false,
+  "sourceId": "fs205572",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   11.58,
+   0.78
+  ],
+  "peakDb": -15.0,
+  "rmsDb": -30.0,
+  "note": null
+ },
+ {
+  "id": "rabbit_sneeze_01",
+  "species": "rabbit",
+  "kind": "vocal",
+  "intents": [
+   "CURIOUS"
+  ],
+  "file": "assets/audio/pets/rabbit/rabbit_sneeze_01.wav",
+  "durationMs": 350,
+  "loop": false,
+  "sourceId": "fs205576",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   0.4,
+   0.5
+  ],
+  "peakDb": -13.8,
+  "rmsDb": -28.0,
+  "note": null
+ },
+ {
+  "id": "rabbit_honk_01",
+  "species": "rabbit",
+  "kind": "vocal",
+  "intents": [
+   "HAPPY",
+   "EXCITED",
+   "PLAYFUL"
+  ],
+  "file": "assets/audio/pets/rabbit/rabbit_honk_01.wav",
+  "durationMs": 260,
+  "loop": false,
+  "sourceId": "fs372075",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   21.66,
+   0.26
+  ],
+  "peakDb": -16.5,
+  "rmsDb": -28.0,
+  "note": null
+ },
+ {
+  "id": "rabbit_honk_02",
+  "species": "rabbit",
+  "kind": "vocal",
+  "intents": [
+   "HAPPY",
+   "EXCITED",
+   "PLAYFUL"
+  ],
+  "file": "assets/audio/pets/rabbit/rabbit_honk_02.wav",
+  "durationMs": 320,
+  "loop": false,
+  "sourceId": "fs372075",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   22.06,
+   0.32
+  ],
+  "peakDb": -16.2,
+  "rmsDb": -28.0,
+  "note": null
+ },
+ {
+  "id": "rabbit_honk_03",
+  "species": "rabbit",
+  "kind": "vocal",
+  "intents": [
+   "HAPPY",
+   "EXCITED",
+   "PLAYFUL"
+  ],
+  "file": "assets/audio/pets/rabbit/rabbit_honk_03.wav",
+  "durationMs": 460,
+  "loop": false,
+  "sourceId": "fs372075",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   22.8,
+   0.46
+  ],
+  "peakDb": -19.8,
+  "rmsDb": -28.0,
+  "note": null
+ },
+ {
+  "id": "rabbit_honk_04",
+  "species": "rabbit",
+  "kind": "vocal",
+  "intents": [
+   "HAPPY",
+   "EXCITED",
+   "PLAYFUL"
+  ],
+  "file": "assets/audio/pets/rabbit/rabbit_honk_04.wav",
+  "durationMs": 240,
+  "loop": false,
+  "sourceId": "fs372075",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   11.8,
+   0.26
+  ],
+  "peakDb": -18.9,
+  "rmsDb": -28.0,
+  "note": null
+ },
+ {
+  "id": "rabbit_honk_05",
+  "species": "rabbit",
+  "kind": "vocal",
+  "intents": [
+   "HAPPY",
+   "EXCITED",
+   "PLAYFUL"
+  ],
+  "file": "assets/audio/pets/rabbit/rabbit_honk_05.wav",
+  "durationMs": 460,
+  "loop": false,
+  "sourceId": "fs372075",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   9.02,
+   0.46
+  ],
+  "peakDb": -14.9,
+  "rmsDb": -28.1,
+  "note": null
+ },
+ {
+  "id": "rabbit_thump_01",
+  "species": "rabbit",
+  "kind": "vocal",
+  "intents": [
+   "ALERT",
+   "SCARED"
+  ],
+  "file": "assets/audio/pets/rabbit/rabbit_thump_01.wav",
+  "durationMs": 210,
+  "loop": false,
+  "sourceId": "fs386007",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   0.6,
+   0.36
+  ],
+  "peakDb": -10.2,
+  "rmsDb": -24.0,
+  "note": null
+ },
+ {
+  "id": "rabbit_thump_02",
+  "species": "rabbit",
+  "kind": "vocal",
+  "intents": [
+   "ALERT",
+   "SCARED"
+  ],
+  "file": "assets/audio/pets/rabbit/rabbit_thump_02.wav",
+  "durationMs": 160,
+  "loop": false,
+  "sourceId": "fs386007",
+  "stages": null,
+  "foley": null,
+  "rate": 1,
+  "segment": [
+   3.86,
+   0.36
+  ],
+  "peakDb": -9.1,
+  "rmsDb": -24.0,
+  "note": null
+ },
+ {
+  "id": "foley_step_floor_01",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_step_floor_01.wav",
+  "durationMs": 134,
+  "loop": false,
+  "sourceId": "kenney-footstep-carpet-0",
+  "stages": null,
+  "foley": "step_floor",
+  "rate": 1.25,
+  "segment": [
+   null,
+   0.18
+  ],
+  "peakDb": -19.5,
+  "rmsDb": -33.9,
+  "note": null
+ },
+ {
+  "id": "foley_step_floor_02",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_step_floor_02.wav",
+  "durationMs": 114,
+  "loop": false,
+  "sourceId": "kenney-footstep-carpet-1",
+  "stages": null,
+  "foley": "step_floor",
+  "rate": 1.25,
+  "segment": [
+   null,
+   0.18
+  ],
+  "peakDb": -19.8,
+  "rmsDb": -34.3,
+  "note": null
+ },
+ {
+  "id": "foley_step_floor_03",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_step_floor_03.wav",
+  "durationMs": 114,
+  "loop": false,
+  "sourceId": "kenney-footstep-carpet-2",
+  "stages": null,
+  "foley": "step_floor",
+  "rate": 1.25,
+  "segment": [
+   null,
+   0.18
+  ],
+  "peakDb": -19.8,
+  "rmsDb": -34.3,
+  "note": null
+ },
+ {
+  "id": "foley_step_floor_04",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_step_floor_04.wav",
+  "durationMs": 114,
+  "loop": false,
+  "sourceId": "kenney-footstep-carpet-3",
+  "stages": null,
+  "foley": "step_floor",
+  "rate": 1.25,
+  "segment": [
+   null,
+   0.18
+  ],
+  "peakDb": -18.7,
+  "rmsDb": -33.7,
+  "note": null
+ },
+ {
+  "id": "foley_step_floor_05",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_step_floor_05.wav",
+  "durationMs": 114,
+  "loop": false,
+  "sourceId": "kenney-footstep-carpet-4",
+  "stages": null,
+  "foley": "step_floor",
+  "rate": 1.25,
+  "segment": [
+   null,
+   0.18
+  ],
+  "peakDb": -18.7,
+  "rmsDb": -33.7,
+  "note": null
+ },
+ {
+  "id": "foley_step_grass_01",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_step_grass_01.wav",
+  "durationMs": 150,
+  "loop": false,
+  "sourceId": "kenney-footstep-grass-0",
+  "stages": null,
+  "foley": "step_grass",
+  "rate": 1.25,
+  "segment": [
+   null,
+   0.18
+  ],
+  "peakDb": -26.9,
+  "rmsDb": -39.8,
+  "note": null
+ },
+ {
+  "id": "foley_step_grass_02",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_step_grass_02.wav",
+  "durationMs": 180,
+  "loop": false,
+  "sourceId": "kenney-footstep-grass-1",
+  "stages": null,
+  "foley": "step_grass",
+  "rate": 1.25,
+  "segment": [
+   null,
+   0.18
+  ],
+  "peakDb": -23.3,
+  "rmsDb": -37.4,
+  "note": null
+ },
+ {
+  "id": "foley_step_grass_03",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_step_grass_03.wav",
+  "durationMs": 180,
+  "loop": false,
+  "sourceId": "kenney-footstep-grass-2",
+  "stages": null,
+  "foley": "step_grass",
+  "rate": 1.25,
+  "segment": [
+   null,
+   0.18
+  ],
+  "peakDb": -23.5,
+  "rmsDb": -38.1,
+  "note": null
+ },
+ {
+  "id": "foley_step_grass_04",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_step_grass_04.wav",
+  "durationMs": 160,
+  "loop": false,
+  "sourceId": "kenney-footstep-grass-3",
+  "stages": null,
+  "foley": "step_grass",
+  "rate": 1.25,
+  "segment": [
+   null,
+   0.18
+  ],
+  "peakDb": -27.8,
+  "rmsDb": -40.5,
+  "note": null
+ },
+ {
+  "id": "foley_step_grass_05",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_step_grass_05.wav",
+  "durationMs": 170,
+  "loop": false,
+  "sourceId": "kenney-footstep-grass-4",
+  "stages": null,
+  "foley": "step_grass",
+  "rate": 1.25,
+  "segment": [
+   null,
+   0.18
+  ],
+  "peakDb": -23.4,
+  "rmsDb": -39.8,
+  "note": null
+ },
+ {
+  "id": "foley_step_dirt_01",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_step_dirt_01.wav",
+  "durationMs": 160,
+  "loop": false,
+  "sourceId": "kenney-footstep-grass-0",
+  "stages": null,
+  "foley": "step_dirt",
+  "rate": 1.1,
+  "segment": [
+   null,
+   0.18
+  ],
+  "peakDb": -27.3,
+  "rmsDb": -38.4,
+  "note": null
+ },
+ {
+  "id": "foley_step_dirt_02",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_step_dirt_02.wav",
+  "durationMs": 180,
+  "loop": false,
+  "sourceId": "kenney-footstep-grass-1",
+  "stages": null,
+  "foley": "step_dirt",
+  "rate": 1.1,
+  "segment": [
+   null,
+   0.18
+  ],
+  "peakDb": -23.8,
+  "rmsDb": -38.9,
+  "note": null
+ },
+ {
+  "id": "foley_step_dirt_03",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_step_dirt_03.wav",
+  "durationMs": 180,
+  "loop": false,
+  "sourceId": "kenney-footstep-grass-2",
+  "stages": null,
+  "foley": "step_dirt",
+  "rate": 1.1,
+  "segment": [
+   null,
+   0.18
+  ],
+  "peakDb": -24.6,
+  "rmsDb": -39.6,
+  "note": null
+ },
+ {
+  "id": "foley_step_dirt_04",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_step_dirt_04.wav",
+  "durationMs": 170,
+  "loop": false,
+  "sourceId": "kenney-footstep-grass-3",
+  "stages": null,
+  "foley": "step_dirt",
+  "rate": 1.1,
+  "segment": [
+   null,
+   0.18
+  ],
+  "peakDb": -28.3,
+  "rmsDb": -40.9,
+  "note": null
+ },
+ {
+  "id": "foley_step_dirt_05",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_step_dirt_05.wav",
+  "durationMs": 180,
+  "loop": false,
+  "sourceId": "kenney-footstep-grass-4",
+  "stages": null,
+  "foley": "step_dirt",
+  "rate": 1.1,
+  "segment": [
+   null,
+   0.18
+  ],
+  "peakDb": -24.7,
+  "rmsDb": -40.2,
+  "note": null
+ },
+ {
+  "id": "foley_land_01",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_land_01.wav",
+  "durationMs": 160,
+  "loop": false,
+  "sourceId": "kenney-impact-light-0",
+  "stages": null,
+  "foley": "land",
+  "rate": 1,
+  "segment": [
+   null,
+   0.3
+  ],
+  "peakDb": -19.7,
+  "rmsDb": -33.1,
+  "note": null
+ },
+ {
+  "id": "foley_land_02",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_land_02.wav",
+  "durationMs": 115,
+  "loop": false,
+  "sourceId": "kenney-impact-light-1",
+  "stages": null,
+  "foley": "land",
+  "rate": 1,
+  "segment": [
+   null,
+   0.3
+  ],
+  "peakDb": -19.9,
+  "rmsDb": -32.7,
+  "note": null
+ },
+ {
+  "id": "foley_land_03",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_land_03.wav",
+  "durationMs": 160,
+  "loop": false,
+  "sourceId": "kenney-impact-light-2",
+  "stages": null,
+  "foley": "land",
+  "rate": 1,
+  "segment": [
+   null,
+   0.3
+  ],
+  "peakDb": -20.7,
+  "rmsDb": -33.4,
+  "note": null
+ },
+ {
+  "id": "foley_land_04",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_land_04.wav",
+  "durationMs": 135,
+  "loop": false,
+  "sourceId": "kenney-impact-light-3",
+  "stages": null,
+  "foley": "land",
+  "rate": 1,
+  "segment": [
+   null,
+   0.3
+  ],
+  "peakDb": -20.0,
+  "rmsDb": -32.2,
+  "note": null
+ },
+ {
+  "id": "foley_land_05",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_land_05.wav",
+  "durationMs": 137,
+  "loop": false,
+  "sourceId": "kenney-impact-light-4",
+  "stages": null,
+  "foley": "land",
+  "rate": 1,
+  "segment": [
+   null,
+   0.3
+  ],
+  "peakDb": -19.9,
+  "rmsDb": -33.9,
+  "note": null
+ },
+ {
+  "id": "foley_scratch_01",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_scratch_01.wav",
+  "durationMs": 900,
+  "loop": false,
+  "sourceId": "bb-scratchy-fabric-1",
+  "stages": null,
+  "foley": "scratch",
+  "rate": 1,
+  "segment": [
+   null,
+   0.9
+  ],
+  "peakDb": -12.6,
+  "rmsDb": -30.0,
+  "note": null
+ },
+ {
+  "id": "foley_scratch_02",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_scratch_02.wav",
+  "durationMs": 900,
+  "loop": false,
+  "sourceId": "bb-scratchy-fabric-2",
+  "stages": null,
+  "foley": "scratch",
+  "rate": 1,
+  "segment": [
+   null,
+   0.9
+  ],
+  "peakDb": -17.3,
+  "rmsDb": -30.2,
+  "note": null
+ },
+ {
+  "id": "foley_scratch_03",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_scratch_03.wav",
+  "durationMs": 900,
+  "loop": false,
+  "sourceId": "bb-scratchy-fabric-3",
+  "stages": null,
+  "foley": "scratch",
+  "rate": 1,
+  "segment": [
+   null,
+   0.9
+  ],
+  "peakDb": -10.7,
+  "rmsDb": -29.9,
+  "note": null
+ },
+ {
+  "id": "foley_body_01",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_body_01.wav",
+  "durationMs": 800,
+  "loop": false,
+  "sourceId": "bb-course-fabric-1",
+  "stages": null,
+  "foley": "body",
+  "rate": 1,
+  "segment": [
+   null,
+   0.8
+  ],
+  "peakDb": -16.9,
+  "rmsDb": -32.0,
+  "note": null
+ },
+ {
+  "id": "foley_body_02",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_body_02.wav",
+  "durationMs": 800,
+  "loop": false,
+  "sourceId": "bb-course-fabric-2",
+  "stages": null,
+  "foley": "body",
+  "rate": 1,
+  "segment": [
+   null,
+   0.8
+  ],
+  "peakDb": -19.1,
+  "rmsDb": -31.9,
+  "note": null
+ },
+ {
+  "id": "foley_body_03",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_body_03.wav",
+  "durationMs": 800,
+  "loop": false,
+  "sourceId": "bb-course-fabric-3",
+  "stages": null,
+  "foley": "body",
+  "rate": 1,
+  "segment": [
+   null,
+   0.8
+  ],
+  "peakDb": -14.0,
+  "rmsDb": -32.2,
+  "note": null
+ },
+ {
+  "id": "foley_body_04",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_body_04.wav",
+  "durationMs": 800,
+  "loop": false,
+  "sourceId": "bb-course-fabric-4",
+  "stages": null,
+  "foley": "body",
+  "rate": 1,
+  "segment": [
+   null,
+   0.8
+  ],
+  "peakDb": -17.8,
+  "rmsDb": -31.9,
+  "note": null
+ },
+ {
+  "id": "foley_body_05",
+  "species": "foley",
+  "kind": "foley",
+  "intents": [],
+  "file": "assets/audio/pets/foley/foley_body_05.wav",
+  "durationMs": 800,
+  "loop": false,
+  "sourceId": "bb-course-fabric-5",
+  "stages": null,
+  "foley": "body",
+  "rate": 1,
+  "segment": [
+   null,
+   0.8
+  ],
+  "peakDb": -18.9,
+  "rmsDb": -32.3,
+  "note": null
+ }
+]

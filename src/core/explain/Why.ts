@@ -41,7 +41,7 @@ function routineContext(d: DecisionTrace, name: string, learning: LearningEviden
   if (!RESTING.has(d.action)) return [];
   const out: string[] = [];
   const { minuteOfDay, darkness } = d.context;
-  if (darkness >= WHY_RULES.dark) out.push('La habitación estaba oscura.');
+  if (darkness >= WHY_RULES.dark) out.push('Estaba oscuro.');
   const sleep = r.habits.find((h) => h.type === 'SLEEP_TIME_PATTERN' && h.confidence >= WHY_RULES.habitConfidence);
   if (sleep && sleep.params.meanMinute !== undefined) {
     const diff = Math.abs(minuteOfDay - sleep.params.meanMinute);

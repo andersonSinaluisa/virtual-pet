@@ -11,6 +11,7 @@
 import type { Action } from '../brain/Actions';
 import type { GameId } from '../games/catalog';
 import type { LifeStage } from '../growth/LifeStage';
+import type { ExplorationState } from '../world/ExplorationMemory';
 import type { ItemKind } from '../world/Items';
 
 export type SubjectKey = ItemKind | 'player' | 'loudSound' | 'darkness';
@@ -22,6 +23,8 @@ export const EXPERIENCE_KINDS = [
   'choice_made', 'game_played',
   // v2 (aprendizaje)
   'player_rewarded', 'rested',
+  // v7 (mundo vivo)
+  'approached_object', 'first_visit',
 ] as const;
 export type ExperienceKind = (typeof EXPERIENCE_KINDS)[number];
 
@@ -59,6 +62,7 @@ export interface ExperienceContext {
   hunger: number;
   energy: number;
   boredom: number;
+  location?: string; // v7: ubicación (room, garden, park)
 }
 
 /*
@@ -173,4 +177,5 @@ export interface MemoryState {
   discoveries: Discovery[];
   stats: BehaviorStats;
   routine: RoutineState; // v3
+  exploration?: ExplorationState; // v7: lugares, objetos y sonidos conocidos (novedad / familiaridad)
 }

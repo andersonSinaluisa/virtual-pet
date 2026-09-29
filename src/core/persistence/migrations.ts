@@ -13,8 +13,11 @@ import { defaultLearningState, type LearningState } from '../learning/Plasticity
 import { individualModifiers, newGrowthState, type GrowthState } from '../growth/GrowthSystem';
 import { isLifeStage, type LifeStage } from '../growth/LifeStage';
 import { emptyMemory, emptyStats } from '../memory/PetMemory';
-import { isItemKind } from '../world/Items';
-import { CURRENT_SAVE_VERSION, DEFAULT_INVENTORY, DEFAULT_SETTINGS, SPECIES, type SaveGame } from './SaveGame';
+import { isItemKind, type ItemKind } from '../world/Items';
+import { ExplorationMemory, EXPLORATION_PARAMS } from '../world/ExplorationMemory';
+import { LOCATIONS } from '../world/Locations';
+import { generateVoiceProfile, isVoiceProfile, type PetVoiceProfile } from '../audio/PetVoiceProfile';
+import { CURRENT_SAVE_VERSION, DEFAULT_INVENTORY, DEFAULT_SETTINGS, SPECIES, type SaveGame, type SpeciesKey } from './SaveGame';
 
 type Json = Record<string, unknown>;
 type Migration = (save: Json) => Json;
@@ -66,7 +69,65 @@ export const MIGRATIONS: Readonly<Record<number, Migration>> = {
     g.history = [{ stage: 'BABY', at: bornAt, petDay: 1 }, ...(stage === 'CHILD' ? [{ stage, at: now, petDay: 1 + Math.floor((now - bornAt) / 86_400_000) }] : [])];
     return { ...s, saveVersion: 4, growth: g };
   },
+  // v4 → v5 (mundo vivo): la mascota sigue en su habitación. Su memoria de exploración se
+  // reconstruye SOLO con evidencia real: sus muebles de siempre, el tiempo vivido en casa y el
+  // historial por objeto (objectStats). Lo que nunca vio sigue siendo nuevo para ella.
+  4: (s) => {
+    const world = isObj(s.world) ? s.world : { objects: [], lightOn: false, nextId: 1, tick: 0 };
+    const memory = isObj(s.memory) ? s.memory : null;
+    const now = num(s.savedAt, Date.now());
+    const adoptedAt = isObj(s.profile) ? num(s.profile.adoptedAt, now) : now;
+    const ex = new ExplorationMemory();
+    ex.seedHome(adoptedAt, LOCATIONS.room.furniture.map((f) => f.kind));
+    if (memory) {
+      const stats = isObj(memory.stats) ? memory.stats : {};
+      const lived = num(stats.onlineTicks, 0) + num(stats.offlineTicks, 0);
+      const room = ex.state.locations.room;
+      if (room) room.ticksSpent = Math.max(room.ticksSpent, lived);
+      const objectStats = isObj(stats.objectStats) ? stats.objectStats : {};
+      for (const [kind, raw] of Object.entries(objectStats)) {
+        if (!isItemKind(kind) || !isObj(raw) || ex.state.objects[kind]) continue;
+        const interactions = num(raw.interactions, 0);
+        if (interactions <= 0) continue;
+        const approaches = num(raw.approaches, 0), plays = num(raw.plays, 0), picks = num(raw.picks, 0);
+        const stage = plays + picks > 0 ? 'INTERACTED' : approaches > 0 ? 'INVESTIGATED' : 'APPROACHED';
+        ex.state.objects[kind as ItemKind] = {
+          firstSeenAt: adoptedAt, lastSeenAt: now, encounterCount: Math.max(1, interactions),
+          exposure: approaches * EXPLORATION_PARAMS.investigateRate * 5 + (plays + picks) * EXPLORATION_PARAMS.interactRate,
+          investigateTicks: approaches * 5, interactions: plays + picks,
+          positiveExperiences: 0, negativeExperiences: num(raw.avoidances, 0), stage, stageAt: { SAW: adoptedAt },
+        };
+      }
+    }
+    const inv = isObj(s.inventory) && Array.isArray(s.inventory.owned) ? s.inventory.owned : [];
+    return {
+      ...s,
+      saveVersion: 5,
+      world: { ...world, location: 'room', stash: {}, doors: {}, environment: { weatherState: 'clear', cloudCover: 0 } },
+      memory: memory ? { ...memory, exploration: ex.exportState() } : memory,
+      inventory: { owned: [...new Set([...inv, 'mysteryBox', 'mirror'])] },
+    };
+  },
+  // v5 → v6 (voz): la mascota recibe su voz propia (estable desde ya) y los volúmenes
+  // antiguos se reparten en las categorías nuevas conservando lo que el jugador eligió.
+  5: (s) => {
+    const settings = isObj(s.settings) ? s.settings : {};
+    const fx = num(settings.effectsVolume, DEFAULT_SETTINGS.effectsVolume);
+    const music = num(settings.musicVolume, DEFAULT_SETTINGS.musicVolume);
+    return {
+      ...s,
+      saveVersion: 6,
+      settings: { ...settings, masterVolume: 1, petVolume: fx, uiVolume: fx * 0.75, ambientVolume: music * 0.6 },
+      audio: { voice: voiceFor(s.profile) as unknown as Json },
+    };
+  },
 };
+
+function voiceFor(profile: unknown): PetVoiceProfile {
+  const p = isObj(profile) ? profile : {};
+  const species = SPECIES.includes(p.species as never) ? (p.species as SpeciesKey) : 'dog';
+  return generateVoiceProfile(`${String(p.name)}|${species}|${String(p.adoptedAt)}`, species);
+}
 
 // Experiencias registradas a partir de las cuales una mascota migrada empieza como CACHORRO
 export const MIGRATION_CHILD_EXPERIENCES = 150;
@@ -125,9 +186,10 @@ export function validateSave(doc: Json): SaveGame {
   const inv = isObj(doc.inventory) && Array.isArray(doc.inventory.owned) ? doc.inventory.owned.filter(isItemKind) : [...DEFAULT_INVENTORY];
   const settings = isObj(doc.settings) ? { ...DEFAULT_SETTINGS, ...(doc.settings as Partial<SaveGame['settings']>) } : { ...DEFAULT_SETTINGS };
   const now = Date.now();
+  const audio = isObj(doc.audio) && isVoiceProfile(doc.audio.voice) ? { voice: doc.audio.voice } : { voice: voiceFor(profile) };
 
   return {
-    saveVersion: 4,
+    saveVersion: 6,
     savedAt: num(doc.savedAt, now),
     lastActiveAt: num(doc.lastActiveAt, now),
     profile: {
@@ -152,6 +214,7 @@ export function validateSave(doc: Json): SaveGame {
     memory,
     settings,
     learning,
+    audio,
   };
 }
 

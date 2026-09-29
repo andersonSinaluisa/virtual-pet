@@ -1,67 +1,62 @@
 /*
  * AUDIO MANAGER
  * -------------
- * Categorías: music · ambient · pet · effects · ui. Cada una con volumen;
- * mute global; ciclo de vida ligado a AppState (en background todo se pausa
- * y los bucles se reanudan al volver). Los sonidos son WAV sintetizados
- * (scripts/generate-sounds.js); `music` está preparada pero sin pista aún.
+ * Categorías: music · ambient · pet · effects · ui → volúmenes del Mixer
+ * (v8: MUSIC · AMBIENCE · VOCAL · AMBIENCE · UI, × master, con ducking del
+ * ambiente cuando la mascota vocaliza). Ciclo de vida ligado a AppState.
+ * Los sonidos del mundo/UI son WAV sintetizados (scripts/generate-sounds.js).
+ * La VOZ de la mascota ya no pasa por aquí: services/audio/PetAudioManager
+ * (grabaciones reales con licencia, docs/audio-licenses.md).
  *
  * Todo fallo de audio se traga: el audio nunca rompe el juego.
  */
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer } from 'expo-audio';
 
-import type { VoiceProfile } from '@/core/growth/GrowthConfig';
+import type { AudioCategory as MixCategory } from '@/core/audio/types';
+
+import { Mixer } from './audio/Mixer';
 
 export type AudioCategory = 'music' | 'ambient' | 'pet' | 'effects' | 'ui';
 
 const SOUNDS = {
   uiTap: { src: require('@/assets/audio/ui-tap.wav') as number, category: 'ui' },
-  petHappy: { src: require('@/assets/audio/pet-happy.wav') as number, category: 'pet' },
-  petBark: { src: require('@/assets/audio/pet-bark.wav') as number, category: 'pet' },
-  petWhimper: { src: require('@/assets/audio/pet-whimper.wav') as number, category: 'pet' },
   discovery: { src: require('@/assets/audio/discovery.wav') as number, category: 'effects' },
   ballThrow: { src: require('@/assets/audio/ball-throw.wav') as number, category: 'effects' },
   boxOpen: { src: require('@/assets/audio/box-open.wav') as number, category: 'effects' },
   ambientRoom: { src: require('@/assets/audio/ambient-room.wav') as number, category: 'ambient' },
+  // v7: mundo vivo (ambiente por lugar y sonidos del mundo)
+  ambientGarden: { src: require('@/assets/audio/ambient-garden.wav') as number, category: 'ambient' },
+  ambientPark: { src: require('@/assets/audio/ambient-park.wav') as number, category: 'ambient' },
+  leafRustle: { src: require('@/assets/audio/leaf-rustle.wav') as number, category: 'effects' },
+  thud: { src: require('@/assets/audio/thud.wav') as number, category: 'effects' },
+  bird: { src: require('@/assets/audio/bird.wav') as number, category: 'ambient' },
+  outside: { src: require('@/assets/audio/outside.wav') as number, category: 'ambient' },
+  creak: { src: require('@/assets/audio/creak.wav') as number, category: 'effects' },
 } as const satisfies Record<string, { src: number; category: AudioCategory }>;
 
 export type SoundName = keyof typeof SOUNDS;
 
-/*
- * v6: perfil de voz por edad. Mientras no haya grabaciones por etapa, la voz de
- * la mascota se reproduce más aguda (bebé) o más grave (adulto) SIN corregir el
- * tono. Cuando existan assets por etapa, se añaden aquí (VOICE_ASSETS) sin tocar
- * a quien llama a play().
- */
-export const VOICE_RATE: Record<VoiceProfile, number> = { baby: 1.3, young: 1.08, adult: 0.94 };
+
+const MIX: Record<AudioCategory, MixCategory> = { music: 'MUSIC', ambient: 'AMBIENCE', pet: 'VOCAL', effects: 'AMBIENCE', ui: 'UI' };
 
 class AudioManagerImpl {
   private players = new Map<SoundName, AudioPlayer>();
-  private volumes: Record<AudioCategory, number> = { music: 0.5, ambient: 0.35, pet: 0.8, effects: 0.8, ui: 0.5 };
   private muted = false;
   private loops = new Set<SoundName>();
   private suspended = false;
   private ready = false;
-  private voice: VoiceProfile = 'young';
-
-  setVoiceProfile(v: VoiceProfile): void {
-    this.voice = v;
-  }
 
   async init(): Promise<void> {
     if (this.ready) return;
     this.ready = true;
+    // Volúmenes/ducking del mezclador → reproductores vivos (bucles de ambiente incluidos)
+    Mixer.subscribe(() => this.players.forEach((p, name) => { p.volume = this.effective(name); }));
     try {
       // Respeta el interruptor de silencio (iOS) y convive con la música del usuario
       await setAudioModeAsync({ playsInSilentMode: false, interruptionMode: 'mixWithOthers', shouldPlayInBackground: false });
     } catch (e) {
       console.warn('[audio] modo no disponible', e);
     }
-  }
-
-  setVolume(category: AudioCategory, v: number): void {
-    this.volumes[category] = Math.max(0, Math.min(1, v));
-    this.players.forEach((p, name) => { if (SOUNDS[name].category === category) p.volume = this.effective(name); });
   }
 
   setMuted(m: boolean): void {
@@ -80,10 +75,6 @@ class AudioManagerImpl {
     try {
       const p = this.player(name);
       p.volume = this.effective(name);
-      if (SOUNDS[name].category === 'pet') {
-        p.shouldCorrectPitch = false;
-        p.setPlaybackRate(VOICE_RATE[this.voice]);
-      }
       void p.seekTo(0).then(() => p.play()).catch(() => {});
     } catch (e) {
       console.warn('[audio] no se pudo reproducir', name, e);
@@ -126,7 +117,8 @@ class AudioManagerImpl {
   }
 
   private effective(name: SoundName): number {
-    return this.muted ? 0 : this.volumes[SOUNDS[name].category];
+    const cat = SOUNDS[name].category;
+    return this.muted ? 0 : Mixer.gain(MIX[cat]) * (cat === 'ambient' ? Mixer.duckFactor('ambience') : 1);
   }
 
   private player(name: SoundName): AudioPlayer {

@@ -158,9 +158,24 @@ export class SynapticPlasticity {
   }
 
   // ---- Señal de aprendizaje ----
-  // natural = la recompensa viene del resultado de una necesidad; si no, solo modula vías 'all'
+  // natural = la recompensa viene del resultado de una necesidad; si no, solo modula vías 'all'.
+  // Las vías de AMENAZA ('threat') no las toca la recompensa: tienen su propio modulador (applyThreat).
   applyReward(reward: number, meta: { source: string; subject: string | null; at: number; tick: number; natural?: boolean }): LearningEvent | null {
-    const r = Math.max(-1, Math.min(1, reward));
+    return this.modulate(reward, meta, (e) => e.channel !== 'threat' && !(e.channel === 'natural' && !meta.natural));
+  }
+
+  /*
+   * v6: MODULADOR DE AMENAZA (independiente de la recompensa)
+   *   threat > 0  un susto real con causa en el mundo → refuerza estímulo → miedo (lo que acababa de coincidir)
+   *   threat < 0  exposición sin consecuencias (se acercó, investigó, no pasó nada) → extinción
+   * Mismas trazas de elegibilidad, mismos topes por sinapsis y por experiencia.
+   */
+  applyThreat(threat: number, meta: { source: string; subject: string | null; at: number; tick: number }): LearningEvent | null {
+    return this.modulate(threat, { ...meta, source: `amenaza:${meta.source}` }, (e) => e.channel === 'threat');
+  }
+
+  private modulate(value: number, meta: { source: string; subject: string | null; at: number; tick: number }, include: (e: PlasticEntry) => boolean): LearningEvent | null {
+    const r = Math.max(-1, Math.min(1, value));
     if (!this.enabled || this.frozen || !r || !Number.isFinite(r)) return null;
     const cfg = this.brain.config.plasticity;
 
@@ -168,13 +183,14 @@ export class SynapticPlasticity {
     for (const e of this.entries) {
       const elig = e.synapse.eligibility;
       if (elig < MIN_ELIGIBILITY) continue;
-      if (e.channel === 'natural' && !meta.natural) continue;
+      if (!include(e)) continue;
       // stageMultiplier (crecimiento): escala el cambio Y su tope, si no el tope escondería el efecto
       const k = this.stageMultiplier;
       let d = this.learningRate * k * e.rate * elig * r;
       d = Math.max(-cfg.maxDeltaPerSynapse * k, Math.min(cfg.maxDeltaPerSynapse * k, d));
       if (d) proposals.push({ e, delta: d, elig });
     }
+    if (!proposals.length && meta.source.startsWith('amenaza:')) return null;
     const total = proposals.reduce((s, p) => s + Math.abs(p.delta), 0);
     const scale = total > cfg.maxWeightChangePerExperience ? cfg.maxWeightChangePerExperience / total : 1;
 

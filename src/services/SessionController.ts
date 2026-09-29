@@ -18,7 +18,6 @@ import type { GameId } from '@/core/games/catalog';
 import { evaluatePreference, trainWithObject, type PreferenceReport } from '@/core/learning/experiments';
 import { createLivingPet, DAY_MS, freeRun, liveDays, supply, type FreeRunReport } from '@/core/routines/experiments';
 import { interpretRoutines, routineHeadline, type RoutineCard } from '@/core/routines/RoutineInterpreter';
-import { stageConfig } from '@/core/growth/GrowthConfig';
 import { RealWorldClock } from '@/core/time/WorldClock';
 import { seededRng } from '@/core/random';
 import type { GameCommand } from '@/core/games/MiniGame';
@@ -34,6 +33,14 @@ import {
 } from '@/state/stores';
 
 import { AudioManager } from './AudioManager';
+import { Mixer } from './audio/Mixer';
+import { PetVoiceBridge } from './audio/PetVoiceBridge';
+import { playWorldSounds, setAmbience } from './WorldAudio';
+import type { LocationId } from '@/core/world/Locations';
+import { LOCATIONS } from '@/core/world/Locations';
+import type { SoundKind } from '@/core/world/Sound';
+import type { WeatherState } from '@/core/world/Environment';
+import type { StepResult } from '@/core/simulation/Simulation';
 import { haptic, setHapticsEnabled } from './haptics';
 import { captureToDocuments } from './snapshots';
 import { openStorage } from './storage';
@@ -115,7 +122,7 @@ class SessionControllerImpl {
     this.lastActiveAt = Date.now();
     const ev = session.events;
     this.unsubs.push(
-      ev.on('tick', () => this.onTick()),
+      ev.on('tick', (r) => this.onTick(r)),
       ev.on('moment', (m) => this.onMoment(m)),
       ev.on('discovery', (d) => {
         memoryStore.set((v) => v + 1);
@@ -129,15 +136,16 @@ class SessionControllerImpl {
       }),
       ev.on('experience', (e) => {
         if (e.offline) return;
-        if (e.kind === 'petted') { haptic('pet'); AudioManager.play('petHappy'); }
-        else if (e.kind === 'scared') AudioManager.play('petWhimper');
-        else if (e.kind === 'greeted') AudioManager.play('petBark');
-        else if (e.kind === 'mystery_opened') { AudioManager.play('boxOpen'); haptic('object'); }
+        // La VOZ la decide el dominio (VocalizationSystem → PetVoiceBridge); aquí solo el háptico
+        if (e.kind === 'petted') haptic('pet');
+        else if (e.kind === 'mystery_opened') haptic('object'); // el "clac" de la caja lo reproduce WorldAudio (es un sonido del mundo)
       }),
       ev.on('changed', () => memoryStore.set((v) => v + 1)),
       ev.on('gameEnded', () => { gameStore.set(null); void this.save(); }),
       ev.on('growth', (g) => {
-        AudioManager.setVoiceProfile(stageConfig(g.to).voice);
+        // v7: crecer abre el mundo (sin niveles): "parece listo para conocer el jardín"
+        const ready = session.places().find((p) => p.canBeThere && !p.visited && p.available);
+        if (ready) setTimeout(() => pushToast({ kind: 'info', title: `${ready.emoji} ${ready.readyHint ?? ''}`, text: 'Mira en Lugares. Lo que haga allí será cosa suya.' }), 4000);
         growthStore.set(g);
         petStore.set(session.snapshot());
         memoryStore.set((v) => v + 1);
@@ -145,7 +153,7 @@ class SessionControllerImpl {
         void this.save(); // la transición termina guardada
       }),
     );
-    AudioManager.setVoiceProfile(stageConfig(session.growth.stage).voice);
+    PetVoiceBridge.attach(session);
     const cfg = session.config.simulation;
     this.engine = new TickEngine({ ticksPerSecond: cfg.baseTicksPerSecond, onTick: () => this.tickOnce() });
     this.engine.setSpeed(devStore.get().speed);
@@ -153,10 +161,11 @@ class SessionControllerImpl {
     petStore.set(session.snapshot());
     memoryStore.set((v) => v + 1);
     if (devStore.get().running && this.appState === 'active') this.engine.start();
-    AudioManager.startLoop('ambientRoom');
+    setAmbience(session.world.location);
   }
 
   private detach(): void {
+    PetVoiceBridge.detach();
     this.engine?.stop();
     this.engine = null;
     this.unsubs.forEach((u) => u());
@@ -178,9 +187,17 @@ class SessionControllerImpl {
     }
   }
 
-  private onTick(): void {
+  private onTick(r: StepResult): void {
     const s = this.session;
     if (!s) return;
+    // Mundo vivo: lo que suena se oye (para el jugador) y, si cambió de lugar, cambia el ambiente
+    playWorldSounds(r);
+    const moved = r.events.find((e) => e.type === 'LOCATION_CHANGED');
+    if (moved && !r.offline) {
+      setAmbience(s.world.location);
+      if (moved.detail.endsWith(':walked')) pushToast({ kind: 'info', title: `${LOCATIONS[s.world.location].emoji} ${s.profile.name} salió ${toPlace(s.world.location)}`, text: 'Nadie se lo dijo: la puerta estaba abierta y quiso ir.' });
+      memoryStore.set((v) => v + 1);
+    }
     if (s.activeGameId) gameStore.set(s.gameView());
     const now = Date.now();
     if (now - this.lastPublish >= PUBLISH_MS) {
@@ -214,7 +231,10 @@ class SessionControllerImpl {
 
   private goBackground(): void {
     this.engine?.stop();
+    // El paseo por el parque termina al irte: volvéis juntos a casa (no se queda sola allí)
+    if (this.session?.world.location === 'park') this.session.goOuting('room');
     AudioManager.suspend();
+    PetVoiceBridge.suspend();
     this.lastActiveAt = Date.now();
     this.session?.setPlayerPresent(false);
     void this.save();
@@ -222,6 +242,7 @@ class SessionControllerImpl {
 
   private async goForeground(): Promise<void> {
     AudioManager.resume();
+    PetVoiceBridge.resume(); // lo que "dijo" offline no suena: el dominio solo lo contó
     await this.reconcile(this.lastActiveAt);
     this.session?.setPlayerPresent(true);
     if (devStore.get().running) this.engine?.start();
@@ -342,12 +363,8 @@ class SessionControllerImpl {
 
   private applySettings(s: SettingsData): void {
     settingsStore.set(s);
+    Mixer.configure({ master: s.masterVolume, pet: s.petVolume, ambient: s.ambientVolume, music: s.musicVolume, ui: s.uiVolume, muted: s.muted });
     AudioManager.setMuted(s.muted);
-    AudioManager.setVolume('music', s.musicVolume);
-    AudioManager.setVolume('effects', s.effectsVolume);
-    AudioManager.setVolume('pet', s.effectsVolume);
-    AudioManager.setVolume('ui', s.effectsVolume * 0.6);
-    AudioManager.setVolume('ambient', s.musicVolume * 0.6);
     setHapticsEnabled(s.haptics);
   }
 
@@ -399,8 +416,7 @@ class SessionControllerImpl {
     const s = this.session;
     if (!s || !s.rewardable()) return false;
     s.rewardPlayer();
-    haptic('pet');
-    AudioManager.play('petHappy');
+    haptic('pet'); // su respuesta sonora (HAPPY) la decide el dominio al registrar el premio
     petStore.set(s.snapshot());
     learningStore.set((v) => v + 1);
     return true;
@@ -568,6 +584,125 @@ class SessionControllerImpl {
   clearNotice(): void {
     sessionStore.set((s) => ({ ...s, notice: null }));
   }
+
+  // ---------- Mundo vivo (jugador: solo cambia el mundo) ----------
+  setGardenDoor(open: boolean): boolean {
+    const ok = this.session?.setGardenDoor(open) ?? false;
+    if (ok) { haptic('select'); AudioManager.play('creak'); }
+    this.publish();
+    return ok;
+  }
+
+  // Salir juntos (paseo): transición intencional; lo que haga allí lo decide su cerebro
+  goOuting(loc: LocationId): boolean {
+    const s = this.session;
+    if (!s) return false;
+    const ok = s.goOuting(loc);
+    if (ok) { setAmbience(s.world.location); haptic('select'); void this.save(); }
+    this.publish();
+    return ok;
+  }
+
+  // ---------- World Inspector (solo desarrollo) ----------
+  devSpawn(kind: ItemKind, at?: { x: number; y: number }): number | null {
+    const w = this.session?.world;
+    if (!w) return null;
+    const pet = w.pet;
+    const p = at ?? { x: Math.max(0.1, Math.min(0.9, pet.x + Math.cos(pet.orientation) * 0.2)), y: Math.max(0.1, Math.min(0.95, pet.y + Math.sin(pet.orientation) * 0.2)) };
+    const o = w.placeItem(kind, p);
+    this.publish();
+    return o.id;
+  }
+
+  devRemove(id: number): void {
+    this.session?.world.removeObject(id);
+    this.publish();
+  }
+
+  devMove(id: number, x: number, y: number): void {
+    this.session?.world.moveObject(id, x, y);
+    this.session?.world.endMoveObject(id);
+    this.publish();
+  }
+
+  devRollBall(): void {
+    const w = this.session?.world;
+    if (!w) return;
+    const ball = w.objects.find((o) => o.kind === 'ball') ?? w.placeItem('ball', { x: 0.15, y: 0.7 });
+    w.push(ball.id, 0.04, (Math.random() - 0.5) * 0.02);
+  }
+
+  devSound(kind: SoundKind, behind = true): void {
+    const w = this.session?.world;
+    if (!w) return;
+    const pet = w.pet, a = pet.orientation + (behind ? Math.PI : 0);
+    const x = Math.max(0.03, Math.min(0.97, pet.x + Math.cos(a) * 0.3)), y = Math.max(0.03, Math.min(0.97, pet.y + Math.sin(a) * 0.3));
+    w.emitSound({ kind, intensity: kind === 'noise' ? 1 : 0.5, x, y, loud: kind === 'noise' });
+  }
+
+  devDropLeaf(): void {
+    const w = this.session?.world;
+    if (!w) return;
+    w.ambient.script([{ at: w.tick + 1, type: 'LEAF_FELL', x: Math.max(0.1, Math.min(0.9, w.pet.x + 0.15)), y: Math.max(0.1, Math.min(0.9, w.pet.y + 0.15)) }]);
+  }
+
+  devSetHour(hour: number): void {
+    // Salto de reloj de desarrollo: la próxima hora pedida del día actual del mundo
+    const now = this.clock.now(), d = new Date(now);
+    const target = new Date(d.getFullYear(), d.getMonth(), d.getDate(), hour, 0, 0, 0).getTime();
+    this.clock.advance(target > now ? target - now : target + DAY_MS - now);
+    this.publish();
+  }
+
+  devSetWeather(w: WeatherState): void {
+    this.session?.world.setWeather(w);
+    this.publish();
+  }
+
+  devSetLocation(loc: LocationId): void {
+    const s = this.session;
+    if (!s) return;
+    s.world.changeLocation(loc, undefined, 'dev');
+    setAmbience(loc);
+    this.publish();
+  }
+
+  // Solo desarrollo: mover a la mascota a mano (en producción nunca se la mueve)
+  devTeleport(x: number, y: number): void {
+    const p = this.session?.world.pet;
+    if (!p || !__DEV__) return;
+    p.x = x; p.y = y;
+    this.publish();
+  }
+
+  devAmbientRate(scale: number): void {
+    const w = this.session?.world;
+    if (w) w.ambient.config.rateScale = Math.max(0, scale);
+  }
+
+  devSpawnMany(n: number): void {
+    const w = this.session?.world;
+    if (!w) return;
+    const kinds: ItemKind[] = ['ball', 'teddy', 'duck', 'rope', 'leaf', 'feather', 'shell', 'yoyo', 'gift', 'crystal'];
+    this.session!.config.world.maxNovelObjects = Math.max(this.session!.config.world.maxNovelObjects, n + 4);
+    for (let i = 0; i < n; i++) w.placeItem(kinds[i % kinds.length], { x: 0.08 + Math.random() * 0.84, y: 0.1 + Math.random() * 0.85 });
+    this.publish();
+  }
+
+  // Tiempo real de un tick de simulación (para el medidor de rendimiento)
+  measureTick(n = 30): number {
+    const s = this.session;
+    if (!s) return 0;
+    const clone = GameSession.clone(s);
+    const t0 = performance.now();
+    for (let i = 0; i < n; i++) clone.tick();
+    return (performance.now() - t0) / n;
+  }
+}
+
+function toPlace(l: LocationId): string {
+  const lb = LOCATIONS[l].label;
+  return lb.startsWith('el ') ? `al ${lb.slice(3)}` : `a ${lb}`;
 }
 
 export const SessionController = new SessionControllerImpl();

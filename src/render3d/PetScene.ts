@@ -13,19 +13,28 @@
  *
  * Coordenadas: el mundo es un suelo 1×1 (x, y); aquí X = (x−0.5)·W, Z = (y−0.5)·D.
  * El render va a 60 fps; la SNN hace sus ticks por separado.
+ *
+ * v7 (mundo vivo): el entorno depende de la UBICACIÓN del dominio (habitación,
+ * jardín, parque; Environments.ts) y se reconstruye al cambiar de lugar
+ * (transición intencional). La orientación de la mascota viene de la
+ * simulación (define su campo de visión: lo que se ve es lo que "ve").
+ * Herramientas de desarrollo: FOV, radio de oído, objetos percibidos,
+ * objetivo de atención y de navegación. Hojas/plumas/mariposas se reciclan
+ * (pool) y el entorno anterior se desecha (dispose).
  */
 import * as THREE from 'three';
-import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 
 import type { Action } from '@/core/brain/Actions';
 import type { SpeciesKey } from '@/core/persistence/SaveGame';
 import type { Point } from '@/core/simulation/Pet';
 import type { World, WorldObject } from '@/core/simulation/World';
 
+import { LOCATIONS, type LocationId } from '@/core/world/Locations';
+
+import { buildEnvironment, disposeEnvironment, type BuiltEnvironment } from './Environments';
 import { GrowthVisualController } from './GrowthVisualController';
 import { Pet3D } from './Pet3D';
-import { PetController } from './PetController';
-import { PetMaterials } from './PetMaterials';
+import { PetController, type VoiceCue } from './PetController';
 import { propFor } from './Props';
 import { setDarkness, setupStudio, type StudioLights } from './Studio';
 
@@ -38,7 +47,23 @@ export interface SceneSource {
   active(): readonly Action[];
   // v6: crecimiento (valor visual continuo 0..3 y tamaño individual); sin él, joven
   growth?(): { value: number; size: number };
+  // v8 (voz): reacción a su propia voz y eventos del cuerpo para el foley (opcionales)
+  voice?(): VoiceCue | null;
+  onFoley?(e: { kind: 'step'; run: boolean } | { kind: 'land' }): void;
 }
+
+// v7: capas de depuración del World Inspector (solo desarrollo)
+export interface WorldDebugFlags {
+  fov: boolean;
+  hearing: boolean;
+  perceived: boolean;
+  attention: boolean;
+  navigation: boolean;
+}
+
+export type CameraFocus = { type: 'pet' } | { type: 'object'; id: number } | null;
+
+const POOLED: ReadonlySet<string> = new Set(['leaf', 'feather', 'butterfly']);
 
 export interface SceneOptions {
   species: SpeciesKey;
@@ -63,10 +88,12 @@ const DAY_SKY = new THREE.Color('#FFF3E6');
 const DUSK_SKY = new THREE.Color('#FFB27A');
 // Cuánto "atardecer" hay: máximo cuando la luz del día está a medias
 const dusk = (daylight: number) => Math.max(0, 1 - Math.abs(daylight - 0.5) * 2);
+/** Campo de visión vertical de la franja visible (el del prototipo). */
+const BASE_FOV = 30;
 
 export class PetScene {
   readonly scene = new THREE.Scene();
-  readonly camera = new THREE.PerspectiveCamera(30, 1, 0.1, 60);
+  readonly camera = new THREE.PerspectiveCamera(BASE_FOV, 1, 0.1, 60);
   private pet!: Pet3D;
   private species!: SpeciesKey;
   private readonly controller = new PetController(null);
@@ -75,7 +102,17 @@ export class PetScene {
   private readonly raycaster = new THREE.Raycaster();
   private readonly floorPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
   private readonly petProxy: THREE.Mesh;
-  private windowMat!: THREE.MeshBasicMaterial;
+  private windowMat: THREE.MeshBasicMaterial | null = null;
+  private env: BuiltEnvironment | null = null;
+  private envLocation: LocationId | null = null;
+  private readonly pool = new Map<string, THREE.Group[]>();
+  debugFlags: WorldDebugFlags = { fov: false, hearing: false, perceived: false, attention: false, navigation: false };
+  cameraFocus: CameraFocus = null;
+  private readonly fovMesh: THREE.Mesh;
+  private readonly hearMesh: THREE.Mesh;
+  private readonly attnMesh: THREE.Mesh;
+  private readonly navMesh: THREE.Mesh;
+  private readonly perceivedMarks: THREE.Mesh[] = [];
   private readonly soundRings: THREE.Mesh[];
   private readonly focusRing: THREE.Mesh;
   private readonly bgColor = new THREE.Color(ROOM.bg);
@@ -87,6 +124,10 @@ export class PetScene {
   private prevPetPos = new THREE.Vector3();
   private camShake = 0;
   private aspect = 1;
+  private width = 1;
+  private height = 1;
+  private viewTop = 0;
+  private viewBottom = 0;
   private zoom = 1;
   private orbit = 0;
   private readonly debug: boolean;
@@ -105,7 +146,8 @@ export class PetScene {
     this.framing = opts.framing ?? 'room';
     this.scene.background = this.bgColor;
     this.lights = setupStudio(this.scene, renderer, { extent: 4.2, environment: !!opts.environment });
-    this.buildRoom();
+    this.scene.add(this.lights.key.target);
+    this.syncEnvironment();
 
     const ringMat = new THREE.MeshBasicMaterial({ color: '#FF9E79', transparent: true, depthWrite: false });
     this.soundRings = [0, 1, 2].map(() => {
@@ -117,6 +159,18 @@ export class PetScene {
     this.focusRing.rotation.x = Math.PI / 2; this.focusRing.position.y = 0.02; this.focusRing.visible = false;
     this.scene.add(this.focusRing);
 
+    // Capas de depuración (invisibles salvo en el World Inspector)
+    const dbg = (color: string, opacity: number) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity, depthWrite: false, side: THREE.DoubleSide });
+    this.fovMesh = new THREE.Mesh(new THREE.CircleGeometry(1, 40, 0, 1), dbg('#7DD8B7', 0.25));
+    this.fovMesh.rotation.x = -Math.PI / 2; this.fovMesh.position.y = 0.03; this.fovMesh.visible = false;
+    this.hearMesh = new THREE.Mesh(new THREE.RingGeometry(0.97, 1, 64), dbg('#93C5FD', 0.6));
+    this.hearMesh.rotation.x = -Math.PI / 2; this.hearMesh.position.y = 0.035; this.hearMesh.visible = false;
+    this.attnMesh = new THREE.Mesh(new THREE.TorusGeometry(0.22, 0.03, 8, 32), dbg('#F2C230', 0.95));
+    this.attnMesh.rotation.x = Math.PI / 2; this.attnMesh.visible = false;
+    this.navMesh = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.25, 12), dbg('#E35D8C', 0.9));
+    this.navMesh.rotation.x = Math.PI; this.navMesh.visible = false;
+    this.scene.add(this.fovMesh, this.hearMesh, this.attnMesh, this.navMesh);
+
     // Volumen invisible para tocar a la mascota (raycast barato, sin recorrer el pelaje)
     this.petProxy = new THREE.Mesh(new THREE.SphereGeometry(0.62, 12, 8), new THREE.MeshBasicMaterial({ visible: false }));
     this.petProxy.position.y = 0.6;
@@ -124,36 +178,33 @@ export class PetScene {
   }
 
   // ---------- Coordenadas ----------
-  toX(x: number): number { return (x - 0.5) * FLOOR_W; }
-  toZ(y: number): number { return (y - 0.5) * FLOOR_D; }
-  fromXZ(X: number, Z: number): Point { return { x: X / FLOOR_W + 0.5, y: Z / FLOOR_D + 0.5 }; }
+  private get sizeW(): number { return FLOOR_W * LOCATIONS[this.envLocation ?? 'room'].size.w; }
+  private get sizeD(): number { return FLOOR_D * LOCATIONS[this.envLocation ?? 'room'].size.h; }
+  toX(x: number): number { return (x - 0.5) * this.sizeW; }
+  toZ(y: number): number { return (y - 0.5) * this.sizeD; }
+  fromXZ(X: number, Z: number): Point { return { x: X / this.sizeW + 0.5, y: Z / this.sizeD + 0.5 }; }
 
   // ---------- Escena ----------
-  private buildRoom(): void {
-    const M = PetMaterials;
-    const floor = new THREE.Mesh(new RoundedBoxGeometry(FLOOR_W + 0.8, 0.3, FLOOR_D + 0.8, 4, 0.14), M.flat(ROOM.floor, 0.95));
-    floor.position.y = -0.15; floor.receiveShadow = true; floor.name = 'Floor';
-    this.scene.add(floor);
-    // Alfombra de punto (tono cálido de Stitch)
-    const rug = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.5, 0.02, 64), M.plush(ROOM.rug));
-    rug.position.set(0.2, 0.01, 0.4); rug.scale.z = 0.7; rug.receiveShadow = true;
-    this.scene.add(rug);
-    // Fondo curvo sin esquinas duras
-    const wall = new THREE.Mesh(
-      new THREE.CylinderGeometry(9, 9, 5, 64, 1, true, Math.PI * 0.72, Math.PI * 0.56),
-      new THREE.MeshStandardMaterial({ color: ROOM.wall, roughness: 1, side: THREE.BackSide }),
-    );
-    wall.position.set(0, 2.2, 6.4); wall.receiveShadow = true;
-    this.scene.add(wall);
-    this.windowMat = new THREE.MeshBasicMaterial({ color: ROOM.window });
-    const win = new THREE.Mesh(new THREE.CircleGeometry(0.62, 48), this.windowMat);
-    win.position.set(1.7, 1.9, -2.4); win.rotation.y = -0.2;
-    const frame = new THREE.Mesh(new THREE.TorusGeometry(0.64, 0.06, 12, 48), M.flat('#ffffff', 0.5));
-    frame.position.copy(win.position); frame.rotation.copy(win.rotation);
-    this.scene.add(win, frame);
-    const door = new THREE.Mesh(new RoundedBoxGeometry(0.9, 1.7, 0.08, 4, 0.06), M.plush(ROOM.door));
-    door.position.set(-2.3, 0.85, -2.3); door.castShadow = true;
-    this.scene.add(door);
+  // El entorno sigue a la ubicación del DOMINIO. Cambiar de lugar = transición intencional:
+  // se desecha el entorno anterior y los objetos de allí (quedan guardados en el mundo, no aquí).
+  private syncEnvironment(): void {
+    const loc = this.source.world.location;
+    if (loc === this.envLocation && this.env) return;
+    if (this.env) disposeEnvironment(this.env);
+    for (const [id, e] of this.entities) this.releaseEntity(id, e);
+    this.envLocation = loc;
+    this.env = buildEnvironment(loc, FLOOR_W, FLOOR_D);
+    this.scene.add(this.env.group);
+    this.windowMat = this.env.windowMat;
+    if (this.pet) {
+      const p = this.source.world.pet;
+      this.pet.object3D.position.set(this.toX(p.x), 0, this.toZ(p.y));
+      this.prevPetPos.copy(this.pet.object3D.position);
+    }
+  }
+
+  get location(): LocationId | null {
+    return this.envLocation;
   }
 
   setSpecies(species: SpeciesKey): void {
@@ -169,6 +220,9 @@ export class PetScene {
     this.pet.object3D.position.set(this.toX(p.x), 0, this.toZ(p.y));
     this.scene.add(this.pet.object3D);
     this.controller.setPet(this.pet);
+    // v8: pasos y aterrizajes sincronizados con la animación → foley (si la fuente escucha)
+    this.pet.animator.onFootContact = (run) => this.source.onFoley?.({ kind: 'step', run });
+    this.pet.animator.onLand = () => this.source.onFoley?.({ kind: 'land' });
     this.prevPetPos.copy(this.pet.object3D.position);
     this.yaw = 0;
   }
@@ -176,8 +230,37 @@ export class PetScene {
   resize(width: number, height: number): void {
     if (!width || !height) return;
     this.renderer.setSize(width, height, false);
-    this.aspect = width / height;
-    this.camera.aspect = this.aspect;
+    this.width = width;
+    this.height = height;
+    this.applyView();
+  }
+
+  /**
+   * Franjas del lienzo tapadas por la interfaz (fracción del alto, arriba y
+   * abajo). La escena ocupa toda la pantalla, pero se encuadra en la franja
+   * visible: se centra en ella y se ve con el mismo tamaño que tendría un
+   * lienzo de ese alto. Tocar/arrastrar siguen funcionando porque el raycast
+   * usa la misma proyección.
+   */
+  setViewInsets(top: number, bottom: number): void {
+    const t = Math.max(0, Math.min(0.45, top || 0));
+    const b = Math.max(0, Math.min(0.45, bottom || 0));
+    if (t === this.viewTop && b === this.viewBottom) return;
+    this.viewTop = t;
+    this.viewBottom = b;
+    this.applyView();
+  }
+
+  private applyView(): void {
+    const band = Math.max(0.1, 1 - this.viewTop - this.viewBottom);
+    // El encuadre (distancia de cámara) se calcula con el aspecto de la franja visible
+    this.aspect = this.width / (this.height * band);
+    this.camera.aspect = this.width / this.height;
+    // Campo de visión ampliado para que la franja muestre exactamente BASE_FOV
+    this.camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(BASE_FOV) / 2) / band));
+    const shift = ((this.viewBottom - this.viewTop) / 2) * this.height;
+    if (Math.abs(shift) > 0.5) this.camera.setViewOffset(this.width, this.height, 0, shift, this.width, this.height);
+    else this.camera.clearViewOffset();
     this.camera.updateProjectionMatrix();
   }
 
@@ -190,7 +273,10 @@ export class PetScene {
   private entityFor(o: WorldObject): Entity {
     let e = this.entities.get(o.id);
     if (e) return e;
-    const group = propFor(o.kind);
+    // Hojas, plumas y mariposas van y vienen: se reciclan en vez de crear/desechar mallas
+    const pooled = POOLED.has(o.kind) ? this.pool.get(o.kind)?.pop() : undefined;
+    const group = pooled ?? propFor(o.kind);
+    group.visible = true;
     group.traverse((m) => { if (m instanceof THREE.Mesh) m.userData.entityId = o.id; });
     group.position.set(this.toX(o.x), 0, this.toZ(o.y));
     this.scene.add(group);
@@ -199,12 +285,23 @@ export class PetScene {
     return e;
   }
 
+  private releaseEntity(id: number, e: Entity): void {
+    this.scene.remove(e.group);
+    this.entities.delete(id);
+    if (POOLED.has(e.obj.kind)) {
+      e.group.visible = false;
+      const list = this.pool.get(e.obj.kind) ?? [];
+      if (list.length < 8) { list.push(e.group); this.pool.set(e.obj.kind, list); }
+    }
+  }
+
   // ---------- Frame ----------
   update(dtRaw: number): void {
     const dt = Math.max(0, Math.min(0.1, dtRaw));
     this.t += dt;
     const world = this.source.world, pet = world.pet, active = this.source.active();
     const k = 1 - Math.exp(-dt * 7);
+    this.syncEnvironment();
 
     // Objetos (posiciones suavizadas entre ticks)
     const alive = new Set<number>();
@@ -230,10 +327,26 @@ export class PetScene {
         const w = e.group.userData.water as THREE.Mesh, a = Math.max(0, Math.min(1, o.amount));
         w.visible = a > 0.02; w.scale.setScalar(0.55 + 0.45 * a); w.position.y = 0.06 + 0.09 * a;
       }
-      if (o.kind === 'mysteryBox') e.group.rotation.z = 0.04 * Math.sin(this.t * 3) * Math.min(1, o.novelty * 2);
+      if (o.kind === 'mysteryBox') {
+        e.group.rotation.z = o.state === 'closed' ? 0.04 * Math.sin(this.t * 3) * Math.min(1, o.novelty * 2) : 0;
+        const lid = e.group.userData.lid as THREE.Object3D | undefined;
+        if (lid) lid.rotation.x += ((o.state === 'closed' ? 0 : -1.9) - lid.rotation.x) * k;
+      }
+      // Hoja/pluma recién caída: baja planeando; la mariposa aletea
+      if ((o.kind === 'leaf' || o.kind === 'feather') && o.age < 30) {
+        e.group.position.y = Math.max(0, 1.4 * (1 - o.age / 30)) + 0.05 * Math.sin(this.t * 6);
+        e.group.rotation.y += dt * 2;
+      }
+      if (o.kind === 'butterfly') {
+        const wings = e.group.userData.wings as THREE.Object3D[] | undefined;
+        wings?.forEach((wg, i) => { wg.rotation.z = (i ? -1 : 1) * (0.2 + 0.9 * Math.abs(Math.sin(this.t * 18))); });
+        const flyer = e.group.userData.flyer as THREE.Object3D | undefined;
+        if (flyer) flyer.position.y = 0.5 + 0.12 * Math.sin(this.t * 2.3 + o.id);
+        e.group.rotation.y = Math.atan2(o.vx, o.vy);
+      }
       if (o.type === 'toy' && o.id !== pet.carrying && (active.includes('PLAY') || o.vx || o.vy)) e.group.rotation.y += dt * 3;
     }
-    for (const [id, e] of this.entities) if (!alive.has(id)) { this.scene.remove(e.group); this.entities.delete(id); }
+    for (const [id, e] of this.entities) if (!alive.has(id)) this.releaseEntity(id, e);
 
     // Mascota: posición del mundo + orientación
     const root = this.pet.object3D;
@@ -244,18 +357,15 @@ export class PetScene {
     const renderSpeed = moved.length() / Math.max(dt, 1e-4);
 
     const lookTarget = this.lookTarget(pet.lookTarget);
-    let yawTarget = this.yaw;
-    if (renderSpeed > 0.25) yawTarget = Math.atan2(moved.x, moved.z);
-    else if (lookTarget) {
-      const d = this.v3.copy(lookTarget).sub(root.position), want = Math.atan2(d.x, d.z);
-      if (Math.abs(angDiff(want, this.yaw)) > 0.9) yawTarget = want;
-    } else if (this.t - this.lastMoveT > 2.5) yawTarget = this.orbit; // quieto: mira hacia la cámara
+    // v7: el cuerpo mira hacia donde la SIMULACIÓN dice (su orientación define lo que ve).
+    // orientation = atan2(dy, dx) en el suelo; en 3D X ∝ x y Z ∝ y → yaw = atan2(cos, sin)
+    const yawTarget = Math.atan2(Math.cos(pet.orientation) * this.sizeW, Math.sin(pet.orientation) * this.sizeD);
     if (renderSpeed > 0.25) this.lastMoveT = this.t;
-    this.yaw += angDiff(yawTarget, this.yaw) * (1 - Math.exp(-dt * 5));
+    this.yaw += angDiff(yawTarget, this.yaw) * (1 - Math.exp(-dt * 6));
     root.rotation.y = this.yaw;
 
     const touching = world.player.touchTicks > 0;
-    this.controller.update({ active, pet, touching, lookTarget, renderSpeed });
+    this.controller.update({ active, pet, touching, lookTarget, renderSpeed, species: this.species, voice: this.source.voice?.() ?? null });
     const g = this.source.growth?.();
     this.growthVisual?.update(dt, g?.value ?? 2, g?.size ?? 1);
     this.pet.update(dt, renderSpeed, this.camera);
@@ -273,7 +383,7 @@ export class PetScene {
 
     // Objeto percibido (solo desarrollo)
     const focus = world.getObject(world.focusObjectId);
-    this.focusRing.visible = this.debug && !!focus && focus.id !== pet.carrying;
+    this.focusRing.visible = (this.debug || this.debugFlags.attention) && !!focus && focus.id !== pet.carrying;
     if (this.focusRing.visible && focus) {
       const e = this.entities.get(focus.id);
       if (e) this.focusRing.position.set(e.group.position.x, 0.02, e.group.position.z);
@@ -284,9 +394,16 @@ export class PetScene {
     this.darkness += ((1 - world.lightLevel) - this.darkness) * (1 - Math.exp(-dt * 2));
     this.sky.set(DAY_SKY).lerp(DUSK_SKY, dusk(world.daylight));
     setDarkness(this.scene, this.lights, this.darkness);
-    this.bgColor.set(ROOM.bg).lerp(NIGHT, this.darkness * 0.85);
+    this.bgColor.set(this.env?.bg ?? ROOM.bg).lerp(NIGHT, this.darkness * 0.85);
     // La ventana muestra el cielo real: día, atardecer anaranjado o noche (aunque la lámpara esté encendida)
-    this.windowMat.color.copy(this.sky).lerp(NIGHT, 1 - world.daylight);
+    this.windowMat?.color.copy(this.sky).lerp(NIGHT, 1 - world.daylight);
+    // Fuera: estrellas de noche y farolas encendidas
+    if (this.env?.stars) (this.env.stars.material as THREE.PointsMaterial).opacity = Math.max(0, (1 - world.daylight - 0.4) * 1.6);
+    for (const lamp of this.env?.lamps ?? []) (lamp.material as THREE.MeshBasicMaterial).color.set(world.daylight < 0.35 ? '#FFE9A8' : '#E8E4D8');
+    // La luz principal sigue a la mascota en los sitios grandes (sombras nítidas con el mismo mapa)
+    this.lights.key.target.position.set(root.position.x, 0, root.position.z);
+    this.lights.key.position.set(root.position.x - 3, 6, root.position.z + 5);
+    this.updateDebug(world);
 
     this.updateCamera(dt, active, root.position);
   }
@@ -296,11 +413,15 @@ export class PetScene {
     const portrait = Math.max(1, Math.sqrt((4 / 3) / Math.max(0.3, this.aspect)));
     const close = this.framing === 'close';
     const dist = (close ? 0.62 : 1) * Math.min(1.6, portrait) * this.zoom;
-    const followK = close ? 0.85 : 0.12 + 0.25 * (portrait - 1);
+    const outside = (this.envLocation ?? 'room') !== 'room';
+    const followK = close ? 0.85 : outside ? 0.85 : 0.12 + 0.25 * (portrait - 1);
     const shakeTarget = active.includes('GET_SCARED') ? 1 : (this.source.world.pet.speed || 0) > 1.4 ? 0.35 : 0;
     this.camShake += (shakeTarget - this.camShake) * (1 - Math.exp(-dt * 4));
 
-    const look = this.v2.set(petPos.x * followK, close ? 0.55 : 0.38, 0.45 + (petPos.z - 0.45) * followK * 0.6);
+    // Modo cámara: sigue a la mascota (por defecto) o enfoca un objeto (herramientas / Recuerdos)
+    const focusObj = this.cameraFocus?.type === 'object' ? this.entities.get(this.cameraFocus.id)?.group.position : null;
+    const target = focusObj ?? petPos;
+    const look = this.v2.set(target.x * followK, close ? 0.55 : 0.38, 0.45 + (target.z - 0.45) * followK * 0.6);
     // Desplazamiento base de la cámara (el mismo del prototipo) escalado y orbitado
     const off = this.v3.set(0, 3.5 - 0.38, 6.3 - 0.45).multiplyScalar(dist);
     if (close) off.y *= 0.55;
@@ -315,6 +436,53 @@ export class PetScene {
 
   render(): void {
     this.renderer.render(this.scene, this.camera);
+  }
+
+  // ---------- World Inspector: FOV, oído, percibidos, atención, navegación ----------
+  private updateDebug(world: World): void {
+    const f = this.debugFlags, pet = world.pet, root = this.pet.object3D.position;
+    const cfg = world.sensorSystem.config;
+    this.fovMesh.visible = f.fov;
+    if (f.fov) {
+      const half = (cfg.fovDeg / 2) * (Math.PI / 180);
+      const range = world.def.sensoryProfile.visualRange * FLOOR_W * 0.6;
+      this.fovMesh.position.set(root.x, 0.03, root.z);
+      this.fovMesh.scale.set(range, range, 1);
+      // CircleGeometry(θstart, θlength) en XY; rotado al suelo: ángulo 0 = +X, crece hacia −Z
+      const g = this.fovMesh.geometry as THREE.CircleGeometry;
+      if (g.parameters.thetaLength !== half * 2) { g.dispose(); this.fovMesh.geometry = new THREE.CircleGeometry(1, 40, -half, half * 2); }
+      const fwd = Math.atan2(-Math.sin(pet.orientation) * this.sizeD, Math.cos(pet.orientation) * this.sizeW);
+      this.fovMesh.rotation.set(-Math.PI / 2, 0, fwd);
+    }
+    this.hearMesh.visible = f.hearing;
+    if (f.hearing) {
+      // Radio al que un sonido de intensidad media (0.5) llega como umbral de atención (0.06)
+      const r = cfg.hearingReference * Math.sqrt(0.5 / 0.06 - 1) * FLOOR_W * 0.6;
+      this.hearMesh.position.set(root.x, 0.035, root.z);
+      this.hearMesh.scale.set(r, r, 1);
+    }
+    const t = world.attentionTarget;
+    this.attnMesh.visible = f.attention && !!t;
+    if (this.attnMesh.visible && t) { this.attnMesh.position.set(this.toX(t.x), 0.05, this.toZ(t.y)); this.attnMesh.rotation.z = this.t * 2; }
+    const nav = world.navigation.lastStep;
+    this.navMesh.visible = f.navigation && !!nav && nav.reachable;
+    if (this.navMesh.visible && nav) this.navMesh.position.set(this.toX(nav.waypoint.x), 0.35 + 0.05 * Math.sin(this.t * 4), this.toZ(nav.waypoint.y));
+    // Marcas de objetos percibidos (más opacas cuanto más fuerte la señal)
+    const list = f.perceived ? world.percepts.filter((p) => p.perceived) : [];
+    while (this.perceivedMarks.length < list.length) {
+      const m = new THREE.Mesh(new THREE.RingGeometry(0.26, 0.3, 32), new THREE.MeshBasicMaterial({ color: '#7DD8B7', transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+      m.rotation.x = -Math.PI / 2;
+      this.scene.add(m);
+      this.perceivedMarks.push(m);
+    }
+    this.perceivedMarks.forEach((m, i) => {
+      const p = list[i];
+      m.visible = !!p;
+      if (!p) return;
+      const e = this.entities.get(p.id);
+      if (e) m.position.set(e.group.position.x, 0.025, e.group.position.z);
+      (m.material as THREE.MeshBasicMaterial).opacity = 0.2 + 0.8 * p.signal;
+    });
   }
 
   // pet.lookTarget viene del mundo (jugador, objeto, puerta) → punto 3D
@@ -356,6 +524,7 @@ export class PetScene {
   }
 
   dispose(): void {
+    if (this.env) disposeEnvironment(this.env);
     this.pet.dispose();
     this.scene.traverse((o) => {
       if (o instanceof THREE.Mesh && o.geometry && !(o.geometry as THREE.BufferGeometry & { shared?: boolean }).shared) {

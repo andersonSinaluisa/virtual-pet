@@ -14,8 +14,9 @@ import type { NetworkState } from '../neural/Network';
 import type { PetBodyState } from '../simulation/Pet';
 import type { WorldState } from '../simulation/World';
 import type { ItemKind } from '../world/Items';
+import type { PetVoiceProfile } from '../audio/PetVoiceProfile';
 
-export const CURRENT_SAVE_VERSION = 4;
+export const CURRENT_SAVE_VERSION = 6;
 
 export const SPECIES = ['dog', 'cat', 'bear', 'bunny'] as const;
 export type SpeciesKey = (typeof SPECIES)[number];
@@ -37,15 +38,20 @@ export interface Inventory {
 }
 
 export interface SettingsData {
+  // v6: mezclador por categorías (todo × masterVolume)
+  masterVolume: number;
+  petVolume: number; // voz de la mascota y su cuerpo (foley)
+  ambientVolume: number; // ambiente del lugar y sonidos del mundo
   musicVolume: number;
-  effectsVolume: number;
+  uiVolume: number;
+  effectsVolume: number; // (v1–v5) se conserva para no perder el ajuste antiguo; ya no se muestra
   muted: boolean;
   haptics: boolean;
   fur: boolean; // pelaje por capas (calidad 3D)
   shadows: boolean;
 }
 
-export const DEFAULT_SETTINGS: SettingsData = { musicVolume: 0.5, effectsVolume: 0.8, muted: false, haptics: true, fur: true, shadows: true };
+export const DEFAULT_SETTINGS: SettingsData = { masterVolume: 1, petVolume: 0.85, ambientVolume: 0.5, musicVolume: 0.5, uiVolume: 0.6, effectsVolume: 0.8, muted: false, haptics: true, fur: true, shadows: true };
 
 export interface SaveGameV1 {
   saveVersion: 1;
@@ -97,6 +103,28 @@ export interface SaveGameV4 extends Omit<SaveGameV3, 'saveVersion' | 'growth'> {
   growth: GrowthState;
 }
 
-export type SaveGame = SaveGameV4;
+/*
+ * v5 (mundo vivo): el mundo guarda la ubicación actual, los objetos que se
+ * quedaron en las demás ubicaciones (con su estado: caja cerrada/abierta,
+ * plato vacío...), las puertas y el clima persistente; la memoria guarda la
+ * exploración (objetos/lugares/sonidos conocidos → novedad y familiaridad);
+ * la mascota, su orientación. NO se guarda nada visual ni derivado
+ * (percepciones, atención, sonidos en curso, iluminación calculada).
+ */
+export interface SaveGameV5 extends Omit<SaveGameV4, 'saveVersion'> {
+  saveVersion: 5;
+}
 
-export const DEFAULT_INVENTORY: ItemKind[] = ['ball', 'teddy', 'duck', 'rope'];
+/*
+ * v6 (voz de la mascota): la VOZ PROPIA de cada mascota (tono, volumen, frecuencia,
+ * variantes favoritas) se genera una vez y se guarda; Ajustes gana volúmenes por
+ * categoría. Lo que dijo mientras no estabas NO se guarda como audio.
+ */
+export interface SaveGameV6 extends Omit<SaveGameV5, 'saveVersion'> {
+  saveVersion: 6;
+  audio: { voice: PetVoiceProfile };
+}
+
+export type SaveGame = SaveGameV6;
+
+export const DEFAULT_INVENTORY: ItemKind[] = ['ball', 'teddy', 'duck', 'rope', 'mysteryBox', 'mirror'];

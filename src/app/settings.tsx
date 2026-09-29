@@ -1,12 +1,15 @@
 /*
  * Ajustes (modal): audio, hápticos, calidad 3D y reinicio. En desarrollo,
  * acceso a las herramientas de investigación de la SNN.
+ * v8: volumen por categoría (general, mascota, ambiente, música, interfaz; se
+ * guardan en el save) y créditos de los sonidos con licencia CC-BY.
  */
 import { router } from 'expo-router';
 import type { ReactNode } from 'react';
 import { Alert, ScrollView, StyleSheet, Switch, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { attributionLines } from '@/core/audio/petAudioManifest';
 import { IconButton, SecondaryButton, SoftButton } from '@/components/ui/Buttons';
 import { Icon, type IconName } from '@/components/ui/Icon';
 import { Card } from '@/components/ui/Surfaces';
@@ -62,14 +65,22 @@ export default function Settings() {
         </View>
         <Card style={styles.card}>
           <Row icon={s.muted ? 'volumeOff' : 'volume'} label="Sonido"><Switch value={!s.muted} onValueChange={(v) => set({ muted: !v })} {...sw} /></Row>
-          <Row icon="music" label="Ambiente y música"><Stepper value={s.musicVolume} onChange={(v) => set({ musicVolume: v })} /></Row>
-          <Row icon="volumeLow" label="Efectos y mascota"><Stepper value={s.effectsVolume} onChange={(v) => set({ effectsVolume: v })} /></Row>
-          <Row icon="touch" label="Vibración" hint="Solo en caricias, objetos y descubrimientos"><Switch value={s.haptics} onValueChange={(v) => set({ haptics: v })} {...sw} /></Row>
+          <Row icon="volume" label="General"><Stepper value={s.masterVolume} onChange={(v) => set({ masterVolume: v })} /></Row>
+          <Row icon="paw" label={`Voz de ${name}`} hint="Sus sonidos y sus pasos"><Stepper value={s.petVolume} onChange={(v) => set({ petVolume: v })} /></Row>
+          <Row icon="spa" label="Ambiente"><Stepper value={s.ambientVolume} onChange={(v) => set({ ambientVolume: v })} /></Row>
+          <Row icon="music" label="Música"><Stepper value={s.musicVolume} onChange={(v) => set({ musicVolume: v })} /></Row>
+          <Row icon="volumeLow" label="Interfaz"><Stepper value={s.uiVolume} onChange={(v) => set({ uiVolume: v })} /></Row>
+          <Row icon="touch" label="Vibración" hint="Caricias, ronroneo, objetos y descubrimientos"><Switch value={s.haptics} onValueChange={(v) => set({ haptics: v })} {...sw} /></Row>
         </Card>
         <Card style={styles.card}>
           <Row icon="paw" label="Pelaje detallado" hint="Más bonito, más exigente para el móvil"><Switch value={s.fur} onValueChange={(v) => set({ fur: v })} {...sw} /></Row>
           <Row icon="light" label="Sombras suaves"><Switch value={s.shadows} onValueChange={(v) => set({ shadows: v })} {...sw} /></Row>
           <Text variant="bodyXs" color={colors.textSubtle}>Los cambios de calidad se aplican al volver a abrir la escena.</Text>
+        </Card>
+        <Card style={styles.card}>
+          <Text variant="labelLg">Créditos de sonido</Text>
+          <Text variant="bodyXs" color={colors.textMuted}>Las voces de las mascotas son grabaciones reales de animales. La mayoría son de dominio público (CC0): Freesound, Kenney y Benjamin Burnes. Estas requieren atribución:</Text>
+          {attributionLines().map((l) => <Text key={l} variant="bodyXs" color={colors.textSubtle}>{l}</Text>)}
         </Card>
         {__DEV__ ? <SoftButton label="Herramientas de desarrollo" icon="dev" tone="lavender" onPress={() => router.push('/dev')} /> : null}
         <SecondaryButton label={`Empezar de nuevo`} icon="trash" onPress={reset} />

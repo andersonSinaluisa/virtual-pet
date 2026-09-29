@@ -1,0 +1,1960 @@
+[
+ {
+  "id": "dog_yip_01",
+  "src": "fs9032",
+  "start": 0.02,
+  "dur": 0.28,
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "EXCITED",
+   "PLAYFUL",
+   "AFFECTION"
+  ],
+  "species": "dog",
+  "rms": -21,
+  "hp": 150
+ },
+ {
+  "id": "dog_yip_02",
+  "src": "fs9032",
+  "start": 0.78,
+  "dur": 0.24,
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "EXCITED",
+   "PLAYFUL",
+   "AFFECTION"
+  ],
+  "species": "dog",
+  "rms": -21,
+  "hp": 150
+ },
+ {
+  "id": "dog_yip_03",
+  "src": "fs9032",
+  "start": 2.1,
+  "dur": 0.26,
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "EXCITED",
+   "PLAYFUL",
+   "AFFECTION"
+  ],
+  "species": "dog",
+  "rms": -21,
+  "hp": 150
+ },
+ {
+  "id": "dog_yip_04",
+  "src": "fs9031",
+  "start": 0.86,
+  "dur": 0.26,
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "EXCITED",
+   "PLAYFUL",
+   "AFFECTION"
+  ],
+  "species": "dog",
+  "rms": -21,
+  "hp": 150
+ },
+ {
+  "id": "dog_yip_05",
+  "src": "fs9031",
+  "start": 4.04,
+  "dur": 0.24,
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "EXCITED",
+   "PLAYFUL",
+   "AFFECTION"
+  ],
+  "species": "dog",
+  "rms": -21,
+  "hp": 150
+ },
+ {
+  "id": "dog_yip_06",
+  "src": "fs9031",
+  "start": 10.88,
+  "dur": 0.26,
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "EXCITED",
+   "PLAYFUL",
+   "AFFECTION"
+  ],
+  "species": "dog",
+  "rms": -21,
+  "hp": 150
+ },
+ {
+  "id": "dog_yip_07",
+  "src": "fs9031",
+  "start": 12.46,
+  "dur": 0.26,
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "EXCITED",
+   "PLAYFUL",
+   "AFFECTION"
+  ],
+  "species": "dog",
+  "rms": -21,
+  "hp": 150
+ },
+ {
+  "id": "dog_yipyip_01",
+  "src": "fs9031",
+  "start": 0.86,
+  "dur": 0.62,
+  "intents": [
+   "GREETING",
+   "EXCITED",
+   "PLAYFUL"
+  ],
+  "species": "dog",
+  "rms": -21,
+  "hp": 150
+ },
+ {
+  "id": "dog_yipyip_02",
+  "src": "fs9031",
+  "start": 10.34,
+  "dur": 0.72,
+  "intents": [
+   "GREETING",
+   "EXCITED",
+   "PLAYFUL"
+  ],
+  "species": "dog",
+  "rms": -21,
+  "hp": 150
+ },
+ {
+  "id": "dog_yipyip_03",
+  "src": "fs9031",
+  "start": 12.46,
+  "dur": 0.66,
+  "intents": [
+   "GREETING",
+   "EXCITED",
+   "PLAYFUL"
+  ],
+  "species": "dog",
+  "rms": -21,
+  "hp": 150
+ },
+ {
+  "id": "dog_bark_01",
+  "src": "fs9031",
+  "start": 0.02,
+  "dur": 0.42,
+  "intents": [
+   "ALERT",
+   "EXCITED"
+  ],
+  "species": "dog",
+  "rms": -20,
+  "hp": 150
+ },
+ {
+  "id": "dog_bark_02",
+  "src": "fs9031",
+  "start": 2.2,
+  "dur": 0.54,
+  "intents": [
+   "ALERT",
+   "EXCITED"
+  ],
+  "species": "dog",
+  "rms": -20,
+  "hp": 150
+ },
+ {
+  "id": "dog_whine_01",
+  "src": "fs505827",
+  "start": 0.2,
+  "dur": 1.26,
+  "intents": [
+   "ATTENTION"
+  ],
+  "species": "dog",
+  "rms": -24,
+  "hp": 200
+ },
+ {
+  "id": "dog_whine_02",
+  "src": "fs505827",
+  "start": 2.84,
+  "dur": 1.52,
+  "intents": [
+   "ATTENTION"
+  ],
+  "species": "dog",
+  "rms": -24,
+  "hp": 200
+ },
+ {
+  "id": "dog_whine_03",
+  "src": "fs505827",
+  "start": 6.1,
+  "dur": 1.36,
+  "intents": [
+   "ATTENTION"
+  ],
+  "species": "dog",
+  "rms": -24,
+  "hp": 200
+ },
+ {
+  "id": "dog_whine_04",
+  "src": "fs505827",
+  "start": 10.16,
+  "dur": 0.86,
+  "intents": [
+   "ATTENTION"
+  ],
+  "species": "dog",
+  "rms": -24,
+  "hp": 200
+ },
+ {
+  "id": "dog_whine_05",
+  "src": "fs752093",
+  "start": 0.68,
+  "dur": 0.84,
+  "intents": [
+   "ATTENTION"
+  ],
+  "species": "dog",
+  "rms": -24,
+  "hp": 200
+ },
+ {
+  "id": "dog_whimper_01",
+  "src": "fs505827",
+  "start": 14.6,
+  "dur": 0.44,
+  "intents": [
+   "SCARED",
+   "UNCOMFORTABLE"
+  ],
+  "species": "dog",
+  "rms": -28,
+  "hp": 200
+ },
+ {
+  "id": "dog_whimper_02",
+  "src": "fs505827",
+  "start": 12.5,
+  "dur": 0.62,
+  "intents": [
+   "SCARED",
+   "UNCOMFORTABLE"
+  ],
+  "species": "dog",
+  "rms": -28,
+  "hp": 200
+ },
+ {
+  "id": "dog_whimper_03",
+  "src": "fs505827",
+  "start": 10.16,
+  "dur": 0.86,
+  "intents": [
+   "UNCOMFORTABLE"
+  ],
+  "species": "dog",
+  "rms": -28,
+  "hp": 200
+ },
+ {
+  "id": "dog_growl_play_01",
+  "src": "fs401820",
+  "start": 1.06,
+  "dur": 0.56,
+  "intents": [
+   "PLAYFUL"
+  ],
+  "species": "dog",
+  "rms": -25,
+  "hp": 80
+ },
+ {
+  "id": "dog_growl_play_02",
+  "src": "fs401820",
+  "start": 6.06,
+  "dur": 0.58,
+  "intents": [
+   "PLAYFUL"
+  ],
+  "species": "dog",
+  "rms": -25,
+  "hp": 80
+ },
+ {
+  "id": "dog_growl_play_03",
+  "src": "fs401820",
+  "start": 7.2,
+  "dur": 1.0,
+  "intents": [
+   "PLAYFUL"
+  ],
+  "species": "dog",
+  "rms": -25,
+  "hp": 80
+ },
+ {
+  "id": "dog_sniff_01",
+  "src": "fs137981",
+  "start": 6.38,
+  "dur": 1.2,
+  "intents": [
+   "CURIOUS"
+  ],
+  "species": "dog",
+  "rms": -26,
+  "hp": 300
+ },
+ {
+  "id": "dog_sniff_02",
+  "src": "fs137981",
+  "start": 28.52,
+  "dur": 1.3,
+  "intents": [
+   "CURIOUS"
+  ],
+  "species": "dog",
+  "rms": -26,
+  "hp": 300
+ },
+ {
+  "id": "dog_sniff_03",
+  "src": "fs137981",
+  "start": 11.34,
+  "dur": 0.8,
+  "intents": [
+   "CURIOUS"
+  ],
+  "species": "dog",
+  "rms": -26,
+  "hp": 300
+ },
+ {
+  "id": "dog_sniff_04",
+  "src": "fs137981",
+  "start": 31.88,
+  "dur": 0.9,
+  "intents": [
+   "CURIOUS"
+  ],
+  "species": "dog",
+  "rms": -26,
+  "hp": 300
+ },
+ {
+  "id": "dog_sigh_01",
+  "src": "fs137981",
+  "start": 23.94,
+  "dur": 1.0,
+  "intents": [
+   "RELAXED",
+   "SLEEPY"
+  ],
+  "species": "dog",
+  "rms": -26,
+  "hp": 80
+ },
+ {
+  "id": "dog_sigh_02",
+  "src": "fs137981",
+  "start": 25.08,
+  "dur": 1.3,
+  "intents": [
+   "RELAXED",
+   "SLEEPY"
+  ],
+  "species": "dog",
+  "rms": -26,
+  "hp": 80
+ },
+ {
+  "id": "dog_sigh_03",
+  "src": "fs137981",
+  "start": 41.32,
+  "dur": 0.8,
+  "intents": [
+   "RELAXED",
+   "SLEEPY"
+  ],
+  "species": "dog",
+  "rms": -26,
+  "hp": 80
+ },
+ {
+  "id": "dog_pant_loop",
+  "src": "fs181767",
+  "start": 1.0,
+  "dur": 8.0,
+  "intents": [
+   "AFFECTION",
+   "PLAYFUL"
+  ],
+  "species": "dog",
+  "rms": -27,
+  "hp": 150,
+  "loop": true,
+  "kind": "layer"
+ },
+ {
+  "id": "dog_sleep_loop",
+  "src": "fs482998",
+  "start": 60.0,
+  "dur": 20.0,
+  "intents": [
+   "SLEEPING"
+  ],
+  "species": "dog",
+  "rms": -30,
+  "hp": 60,
+  "loop": true,
+  "kind": "layer"
+ },
+ {
+  "id": "dog_drink_loop",
+  "src": "fs401821",
+  "start": 6.0,
+  "dur": 6.0,
+  "intents": [],
+  "species": "dog",
+  "rms": -28,
+  "hp": 150,
+  "loop": true,
+  "kind": "foley",
+  "foley": "drink"
+ },
+ {
+  "id": "cat_meow_short_01",
+  "src": "ba-meow-food-time-1",
+  "start": null,
+  "dur": null,
+  "intents": [
+   "GREETING",
+   "HAPPY"
+  ],
+  "species": "cat",
+  "rms": -23,
+  "hp": 150,
+  "trim": true,
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ]
+ },
+ {
+  "id": "cat_meow_short_02",
+  "src": "ba-meow-food-time-3",
+  "start": null,
+  "dur": null,
+  "intents": [
+   "GREETING",
+   "HAPPY"
+  ],
+  "species": "cat",
+  "rms": -23,
+  "hp": 150,
+  "trim": true,
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ]
+ },
+ {
+  "id": "cat_meow_short_03",
+  "src": "ba-meow-food-time-11",
+  "start": null,
+  "dur": null,
+  "intents": [
+   "GREETING",
+   "HAPPY"
+  ],
+  "species": "cat",
+  "rms": -23,
+  "hp": 150,
+  "trim": true,
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ]
+ },
+ {
+  "id": "cat_meow_short_04",
+  "src": "ba-meow-food-time-12",
+  "start": null,
+  "dur": null,
+  "intents": [
+   "GREETING",
+   "HAPPY"
+  ],
+  "species": "cat",
+  "rms": -23,
+  "hp": 150,
+  "trim": true,
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ]
+ },
+ {
+  "id": "cat_meow_short_05",
+  "src": "ba-meow-food-time-16",
+  "start": null,
+  "dur": null,
+  "intents": [
+   "GREETING",
+   "HAPPY"
+  ],
+  "species": "cat",
+  "rms": -23,
+  "hp": 150,
+  "trim": true,
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ]
+ },
+ {
+  "id": "cat_meow_short_06",
+  "src": "ba-meow-food-time-8",
+  "start": null,
+  "dur": null,
+  "intents": [
+   "GREETING",
+   "HAPPY"
+  ],
+  "species": "cat",
+  "rms": -23,
+  "hp": 150,
+  "trim": true,
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ]
+ },
+ {
+  "id": "cat_meow_short_07",
+  "src": "ba-meow-tiny-tito",
+  "start": null,
+  "dur": null,
+  "intents": [
+   "GREETING",
+   "HAPPY"
+  ],
+  "species": "cat",
+  "rms": -23,
+  "hp": 150,
+  "trim": true,
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ]
+ },
+ {
+  "id": "cat_meow_short_08",
+  "src": "ba-meow-trevor",
+  "start": null,
+  "dur": null,
+  "intents": [
+   "GREETING",
+   "HAPPY"
+  ],
+  "species": "cat",
+  "rms": -23,
+  "hp": 150,
+  "trim": true,
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ]
+ },
+ {
+  "id": "cat_meow_01",
+  "src": "ba-meow-food-time-4",
+  "start": null,
+  "dur": null,
+  "intents": [
+   "ATTENTION"
+  ],
+  "species": "cat",
+  "rms": -23,
+  "hp": 150,
+  "trim": true,
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ]
+ },
+ {
+  "id": "cat_meow_02",
+  "src": "ba-meow-food-time-5",
+  "start": null,
+  "dur": null,
+  "intents": [
+   "ATTENTION",
+   "UNCOMFORTABLE"
+  ],
+  "species": "cat",
+  "rms": -23,
+  "hp": 150,
+  "trim": true,
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ]
+ },
+ {
+  "id": "cat_meow_03",
+  "src": "ba-meow-food-time-6",
+  "start": null,
+  "dur": null,
+  "intents": [
+   "ATTENTION"
+  ],
+  "species": "cat",
+  "rms": -23,
+  "hp": 150,
+  "trim": true,
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ]
+ },
+ {
+  "id": "cat_meow_04",
+  "src": "ba-meow-food-time-9",
+  "start": null,
+  "dur": null,
+  "intents": [
+   "ATTENTION"
+  ],
+  "species": "cat",
+  "rms": -23,
+  "hp": 150,
+  "trim": true,
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ]
+ },
+ {
+  "id": "cat_meow_05",
+  "src": "ba-meow-food-time-10",
+  "start": null,
+  "dur": null,
+  "intents": [
+   "ATTENTION"
+  ],
+  "species": "cat",
+  "rms": -23,
+  "hp": 150,
+  "trim": true,
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ]
+ },
+ {
+  "id": "cat_meow_06",
+  "src": "ba-meow-food-time-13",
+  "start": null,
+  "dur": null,
+  "intents": [
+   "ATTENTION"
+  ],
+  "species": "cat",
+  "rms": -23,
+  "hp": 150,
+  "trim": true,
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ]
+ },
+ {
+  "id": "cat_meow_07",
+  "src": "ba-meow-food-time-14",
+  "start": null,
+  "dur": null,
+  "intents": [
+   "ATTENTION"
+  ],
+  "species": "cat",
+  "rms": -23,
+  "hp": 150,
+  "trim": true,
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ]
+ },
+ {
+  "id": "cat_meow_08",
+  "src": "ba-meow-food-time-15",
+  "start": null,
+  "dur": null,
+  "intents": [
+   "ATTENTION"
+  ],
+  "species": "cat",
+  "rms": -23,
+  "hp": 150,
+  "trim": true,
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ]
+ },
+ {
+  "id": "cat_meow_09",
+  "src": "ba-meow-food-time-17",
+  "start": null,
+  "dur": null,
+  "intents": [
+   "ATTENTION"
+  ],
+  "species": "cat",
+  "rms": -23,
+  "hp": 150,
+  "trim": true,
+  "stages": [
+   "CHILD",
+   "YOUNG",
+   "ADULT"
+  ]
+ },
+ {
+  "id": "cat_meow_soft_01",
+  "src": "fs436541",
+  "start": 0.0,
+  "dur": 0.6,
+  "intents": [
+   "GREETING",
+   "AFFECTION",
+   "UNCOMFORTABLE"
+  ],
+  "species": "cat",
+  "rms": -25,
+  "hp": 150
+ },
+ {
+  "id": "cat_meow_soft_02",
+  "src": "fs262312",
+  "start": 0.0,
+  "dur": 0.65,
+  "intents": [
+   "GREETING",
+   "ATTENTION"
+  ],
+  "species": "cat",
+  "rms": -24,
+  "hp": 150,
+  "stages": [
+   "YOUNG",
+   "ADULT"
+  ]
+ },
+ {
+  "id": "cat_kitten_01",
+  "src": "fs196251",
+  "start": 0.38,
+  "dur": 0.68,
+  "intents": [
+   "GREETING",
+   "ATTENTION",
+   "HAPPY"
+  ],
+  "species": "cat",
+  "rms": -24,
+  "hp": 200,
+  "stages": [
+   "BABY",
+   "CHILD"
+  ]
+ },
+ {
+  "id": "cat_kitten_02",
+  "src": "fs196251",
+  "start": 1.48,
+  "dur": 0.62,
+  "intents": [
+   "GREETING",
+   "ATTENTION",
+   "HAPPY"
+  ],
+  "species": "cat",
+  "rms": -24,
+  "hp": 200,
+  "stages": [
+   "BABY",
+   "CHILD"
+  ]
+ },
+ {
+  "id": "cat_kitten_03",
+  "src": "fs196251",
+  "start": 4.74,
+  "dur": 0.76,
+  "intents": [
+   "GREETING",
+   "ATTENTION",
+   "HAPPY"
+  ],
+  "species": "cat",
+  "rms": -24,
+  "hp": 200,
+  "stages": [
+   "BABY",
+   "CHILD"
+  ]
+ },
+ {
+  "id": "cat_kitten_04",
+  "src": "fs196251",
+  "start": 7.14,
+  "dur": 0.58,
+  "intents": [
+   "GREETING",
+   "ATTENTION",
+   "HAPPY"
+  ],
+  "species": "cat",
+  "rms": -24,
+  "hp": 200,
+  "stages": [
+   "BABY",
+   "CHILD"
+  ]
+ },
+ {
+  "id": "cat_trill_01",
+  "src": "fs200336",
+  "start": 3.42,
+  "dur": 0.76,
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "AFFECTION",
+   "PLAYFUL"
+  ],
+  "species": "cat",
+  "rms": -24,
+  "hp": 150
+ },
+ {
+  "id": "cat_trill_02",
+  "src": "fs200336",
+  "start": 6.06,
+  "dur": 0.6,
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "AFFECTION",
+   "PLAYFUL"
+  ],
+  "species": "cat",
+  "rms": -24,
+  "hp": 150
+ },
+ {
+  "id": "cat_trill_03",
+  "src": "fs200336",
+  "start": 7.68,
+  "dur": 0.68,
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "AFFECTION",
+   "PLAYFUL"
+  ],
+  "species": "cat",
+  "rms": -24,
+  "hp": 150
+ },
+ {
+  "id": "cat_trill_04",
+  "src": "fs200336",
+  "start": 9.86,
+  "dur": 0.42,
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "AFFECTION",
+   "PLAYFUL"
+  ],
+  "species": "cat",
+  "rms": -24,
+  "hp": 150
+ },
+ {
+  "id": "cat_trill_05",
+  "src": "fs200336",
+  "start": 0.08,
+  "dur": 0.64,
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "AFFECTION",
+   "PLAYFUL"
+  ],
+  "species": "cat",
+  "rms": -24,
+  "hp": 150
+ },
+ {
+  "id": "cat_trill_06",
+  "src": "fs262310",
+  "start": 0.0,
+  "dur": 0.52,
+  "intents": [
+   "GREETING",
+   "HAPPY"
+  ],
+  "species": "cat",
+  "rms": -24,
+  "hp": 150
+ },
+ {
+  "id": "cat_trill_07",
+  "src": "fs262311",
+  "start": 0.0,
+  "dur": 0.47,
+  "intents": [
+   "GREETING",
+   "HAPPY"
+  ],
+  "species": "cat",
+  "rms": -24,
+  "hp": 150
+ },
+ {
+  "id": "cat_trill_08",
+  "src": "fs262307",
+  "start": 0.0,
+  "dur": 0.57,
+  "intents": [
+   "GREETING",
+   "AFFECTION"
+  ],
+  "species": "cat",
+  "rms": -24,
+  "hp": 150
+ },
+ {
+  "id": "cat_whirr_01",
+  "src": "fs415107",
+  "start": 0.1,
+  "dur": 0.75,
+  "intents": [
+   "HAPPY",
+   "EXCITED",
+   "PLAYFUL"
+  ],
+  "species": "cat",
+  "rms": -23,
+  "hp": 150
+ },
+ {
+  "id": "cat_chirp_01",
+  "src": "fs451250",
+  "start": 0.54,
+  "dur": 0.28,
+  "intents": [
+   "CURIOUS",
+   "PLAYFUL",
+   "ALERT"
+  ],
+  "species": "cat",
+  "rms": -25,
+  "hp": 300
+ },
+ {
+  "id": "cat_chirp_02",
+  "src": "fs451250",
+  "start": 4.88,
+  "dur": 0.54,
+  "intents": [
+   "CURIOUS",
+   "PLAYFUL"
+  ],
+  "species": "cat",
+  "rms": -25,
+  "hp": 300
+ },
+ {
+  "id": "cat_hiss_soft_01",
+  "src": "fs532226",
+  "start": 4.96,
+  "dur": 0.5,
+  "intents": [
+   "SCARED"
+  ],
+  "species": "cat",
+  "rms": -31,
+  "hp": 400
+ },
+ {
+  "id": "cat_sniff_01",
+  "src": "fs418161",
+  "start": 2.0,
+  "dur": 1.0,
+  "intents": [
+   "CURIOUS"
+  ],
+  "species": "cat",
+  "rms": -28,
+  "hp": 400
+ },
+ {
+  "id": "cat_sniff_02",
+  "src": "fs418161",
+  "start": 3.0,
+  "dur": 1.0,
+  "intents": [
+   "CURIOUS"
+  ],
+  "species": "cat",
+  "rms": -28,
+  "hp": 400
+ },
+ {
+  "id": "cat_sniff_03",
+  "src": "fs801809",
+  "start": 2.94,
+  "dur": 0.4,
+  "intents": [
+   "CURIOUS"
+  ],
+  "species": "cat",
+  "rms": -28,
+  "hp": 400
+ },
+ {
+  "id": "cat_yawn_01",
+  "src": "fs841188",
+  "start": 0.0,
+  "dur": 0.76,
+  "intents": [
+   "SLEEPY"
+  ],
+  "species": "cat",
+  "rms": -26,
+  "hp": 150
+ },
+ {
+  "id": "cat_purr_loop_01",
+  "src": "fs650575",
+  "start": 0.0,
+  "dur": 24.0,
+  "intents": [
+   "AFFECTION",
+   "RELAXED"
+  ],
+  "species": "cat",
+  "rms": -24,
+  "hp": 40,
+  "loop": true,
+  "kind": "layer"
+ },
+ {
+  "id": "cat_purr_loop_02",
+  "src": "fs130968",
+  "start": 2.0,
+  "dur": 20.0,
+  "intents": [
+   "AFFECTION",
+   "RELAXED"
+  ],
+  "species": "cat",
+  "rms": -24,
+  "hp": 40,
+  "loop": true,
+  "kind": "layer"
+ },
+ {
+  "id": "cat_sleep_loop",
+  "src": "fs811963",
+  "start": 10.0,
+  "dur": 24.0,
+  "intents": [
+   "SLEEPING"
+  ],
+  "species": "cat",
+  "rms": -31,
+  "hp": 60,
+  "loop": true,
+  "kind": "layer"
+ },
+ {
+  "id": "bear_gurgle_01",
+  "src": "fs249443",
+  "start": 43.9,
+  "dur": 0.56,
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "AFFECTION",
+   "RELAXED",
+   "PLAYFUL"
+  ],
+  "species": "bear",
+  "rms": -22,
+  "hp": 70,
+  "rate": 1.12
+ },
+ {
+  "id": "bear_gurgle_02",
+  "src": "fs249443",
+  "start": 45.4,
+  "dur": 1.0,
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "AFFECTION",
+   "RELAXED",
+   "PLAYFUL"
+  ],
+  "species": "bear",
+  "rms": -22,
+  "hp": 70,
+  "rate": 1.12
+ },
+ {
+  "id": "bear_gurgle_03",
+  "src": "fs249443",
+  "start": 48.06,
+  "dur": 0.42,
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "AFFECTION",
+   "RELAXED",
+   "PLAYFUL",
+   "SLEEPY"
+  ],
+  "species": "bear",
+  "rms": -22,
+  "hp": 70,
+  "rate": 1.12
+ },
+ {
+  "id": "bear_gurgle_04",
+  "src": "fs249443",
+  "start": 49.1,
+  "dur": 0.44,
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "AFFECTION",
+   "RELAXED",
+   "PLAYFUL"
+  ],
+  "species": "bear",
+  "rms": -22,
+  "hp": 70,
+  "rate": 1.12
+ },
+ {
+  "id": "bear_gurgle_05",
+  "src": "fs249443",
+  "start": 50.62,
+  "dur": 0.42,
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "AFFECTION",
+   "RELAXED",
+   "PLAYFUL"
+  ],
+  "species": "bear",
+  "rms": -22,
+  "hp": 70,
+  "rate": 1.12
+ },
+ {
+  "id": "bear_gurgle_06",
+  "src": "fs249443",
+  "start": 15.16,
+  "dur": 0.76,
+  "intents": [
+   "GREETING",
+   "HAPPY",
+   "AFFECTION",
+   "RELAXED",
+   "PLAYFUL",
+   "SLEEPY"
+  ],
+  "species": "bear",
+  "rms": -22,
+  "hp": 70,
+  "rate": 1.12
+ },
+ {
+  "id": "bear_cub_call_01",
+  "src": "fs249442",
+  "start": 26.86,
+  "dur": 1.1,
+  "intents": [
+   "ATTENTION",
+   "EXCITED"
+  ],
+  "species": "bear",
+  "rms": -24,
+  "hp": 90,
+  "rate": 1.08
+ },
+ {
+  "id": "bear_cub_call_02",
+  "src": "fs249442",
+  "start": 37.84,
+  "dur": 1.3,
+  "intents": [
+   "ATTENTION",
+   "EXCITED"
+  ],
+  "species": "bear",
+  "rms": -24,
+  "hp": 90,
+  "rate": 1.08
+ },
+ {
+  "id": "bear_cub_call_03",
+  "src": "fs249442",
+  "start": 22.36,
+  "dur": 0.6,
+  "intents": [
+   "ATTENTION",
+   "EXCITED"
+  ],
+  "species": "bear",
+  "rms": -24,
+  "hp": 90,
+  "rate": 1.08
+ },
+ {
+  "id": "bear_cub_call_04",
+  "src": "fs249442",
+  "start": 28.9,
+  "dur": 0.76,
+  "intents": [
+   "ATTENTION",
+   "EXCITED"
+  ],
+  "species": "bear",
+  "rms": -24,
+  "hp": 90,
+  "rate": 1.08
+ },
+ {
+  "id": "bear_whimper_01",
+  "src": "fs249442",
+  "start": 9.36,
+  "dur": 0.24,
+  "intents": [
+   "SCARED",
+   "UNCOMFORTABLE"
+  ],
+  "species": "bear",
+  "rms": -28,
+  "hp": 90,
+  "rate": 1.08
+ },
+ {
+  "id": "bear_whimper_02",
+  "src": "fs249442",
+  "start": 12.7,
+  "dur": 0.26,
+  "intents": [
+   "SCARED",
+   "UNCOMFORTABLE"
+  ],
+  "species": "bear",
+  "rms": -28,
+  "hp": 90,
+  "rate": 1.08
+ },
+ {
+  "id": "bear_sniff_01",
+  "src": "fs249440",
+  "start": 5.24,
+  "dur": 1.2,
+  "intents": [
+   "CURIOUS"
+  ],
+  "species": "bear",
+  "rms": -26,
+  "hp": 120
+ },
+ {
+  "id": "bear_sniff_02",
+  "src": "fs249440",
+  "start": 14.82,
+  "dur": 1.2,
+  "intents": [
+   "CURIOUS"
+  ],
+  "species": "bear",
+  "rms": -26,
+  "hp": 120
+ },
+ {
+  "id": "bear_sniff_03",
+  "src": "fs249440",
+  "start": 10.86,
+  "dur": 0.36,
+  "intents": [
+   "CURIOUS",
+   "ALERT"
+  ],
+  "species": "bear",
+  "rms": -26,
+  "hp": 120
+ },
+ {
+  "id": "bear_sniff_04",
+  "src": "fs249440",
+  "start": 12.02,
+  "dur": 0.4,
+  "intents": [
+   "CURIOUS",
+   "ALERT"
+  ],
+  "species": "bear",
+  "rms": -26,
+  "hp": 120
+ },
+ {
+  "id": "bear_sleep_loop",
+  "src": "fs482998",
+  "start": 100.0,
+  "dur": 20.0,
+  "intents": [
+   "SLEEPING"
+  ],
+  "species": "bear",
+  "rms": -30,
+  "hp": 50,
+  "rate": 0.82,
+  "loop": true,
+  "kind": "layer",
+  "note": "Respiración de perro dormido con el tono bajado (no hay ronquidos de oso con licencia apta)."
+ },
+ {
+  "id": "rabbit_purr_loop_01",
+  "src": "fs205575",
+  "start": 0.5,
+  "dur": 12.0,
+  "intents": [
+   "AFFECTION",
+   "RELAXED"
+  ],
+  "species": "rabbit",
+  "rms": -32,
+  "hp": 150,
+  "loop": true,
+  "kind": "layer"
+ },
+ {
+  "id": "rabbit_purr_loop_02",
+  "src": "fs205574",
+  "start": 0.5,
+  "dur": 12.0,
+  "intents": [
+   "AFFECTION",
+   "RELAXED"
+  ],
+  "species": "rabbit",
+  "rms": -32,
+  "hp": 150,
+  "loop": true,
+  "kind": "layer"
+ },
+ {
+  "id": "rabbit_snuffle_01",
+  "src": "fs205572",
+  "start": 1.14,
+  "dur": 0.46,
+  "intents": [
+   "CURIOUS",
+   "GREETING"
+  ],
+  "species": "rabbit",
+  "rms": -30,
+  "hp": 200
+ },
+ {
+  "id": "rabbit_snuffle_02",
+  "src": "fs205572",
+  "start": 2.38,
+  "dur": 0.22,
+  "intents": [
+   "CURIOUS",
+   "GREETING"
+  ],
+  "species": "rabbit",
+  "rms": -30,
+  "hp": 200
+ },
+ {
+  "id": "rabbit_snuffle_03",
+  "src": "fs205572",
+  "start": 6.42,
+  "dur": 0.6,
+  "intents": [
+   "CURIOUS",
+   "GREETING"
+  ],
+  "species": "rabbit",
+  "rms": -30,
+  "hp": 200
+ },
+ {
+  "id": "rabbit_snuffle_04",
+  "src": "fs205572",
+  "start": 7.86,
+  "dur": 0.32,
+  "intents": [
+   "CURIOUS",
+   "GREETING"
+  ],
+  "species": "rabbit",
+  "rms": -30,
+  "hp": 200
+ },
+ {
+  "id": "rabbit_snuffle_05",
+  "src": "fs205572",
+  "start": 11.58,
+  "dur": 0.78,
+  "intents": [
+   "CURIOUS",
+   "GREETING"
+  ],
+  "species": "rabbit",
+  "rms": -30,
+  "hp": 200
+ },
+ {
+  "id": "rabbit_sneeze_01",
+  "src": "fs205576",
+  "start": 0.4,
+  "dur": 0.5,
+  "intents": [
+   "CURIOUS"
+  ],
+  "species": "rabbit",
+  "rms": -28,
+  "hp": 200
+ },
+ {
+  "id": "rabbit_honk_01",
+  "src": "fs372075",
+  "start": 21.66,
+  "dur": 0.26,
+  "intents": [
+   "HAPPY",
+   "EXCITED",
+   "PLAYFUL"
+  ],
+  "species": "rabbit",
+  "rms": -28,
+  "hp": 200
+ },
+ {
+  "id": "rabbit_honk_02",
+  "src": "fs372075",
+  "start": 22.06,
+  "dur": 0.32,
+  "intents": [
+   "HAPPY",
+   "EXCITED",
+   "PLAYFUL"
+  ],
+  "species": "rabbit",
+  "rms": -28,
+  "hp": 200
+ },
+ {
+  "id": "rabbit_honk_03",
+  "src": "fs372075",
+  "start": 22.8,
+  "dur": 0.46,
+  "intents": [
+   "HAPPY",
+   "EXCITED",
+   "PLAYFUL"
+  ],
+  "species": "rabbit",
+  "rms": -28,
+  "hp": 200
+ },
+ {
+  "id": "rabbit_honk_04",
+  "src": "fs372075",
+  "start": 11.8,
+  "dur": 0.26,
+  "intents": [
+   "HAPPY",
+   "EXCITED",
+   "PLAYFUL"
+  ],
+  "species": "rabbit",
+  "rms": -28,
+  "hp": 200
+ },
+ {
+  "id": "rabbit_honk_05",
+  "src": "fs372075",
+  "start": 9.02,
+  "dur": 0.46,
+  "intents": [
+   "HAPPY",
+   "EXCITED",
+   "PLAYFUL"
+  ],
+  "species": "rabbit",
+  "rms": -28,
+  "hp": 200
+ },
+ {
+  "id": "rabbit_thump_01",
+  "src": "fs386007",
+  "start": 0.6,
+  "dur": 0.36,
+  "intents": [
+   "ALERT",
+   "SCARED"
+  ],
+  "species": "rabbit",
+  "rms": -24,
+  "hp": 40,
+  "kind": "vocal"
+ },
+ {
+  "id": "rabbit_thump_02",
+  "src": "fs386007",
+  "start": 3.86,
+  "dur": 0.36,
+  "intents": [
+   "ALERT",
+   "SCARED"
+  ],
+  "species": "rabbit",
+  "rms": -24,
+  "hp": 40,
+  "kind": "vocal"
+ },
+ {
+  "id": "foley_step_floor_01",
+  "src": "kenney-footstep-carpet-0",
+  "start": null,
+  "dur": 0.18,
+  "intents": [],
+  "species": "foley",
+  "rms": -30,
+  "hp": 300,
+  "rate": 1.25,
+  "trim": true,
+  "kind": "foley",
+  "foley": "step_floor"
+ },
+ {
+  "id": "foley_step_floor_02",
+  "src": "kenney-footstep-carpet-1",
+  "start": null,
+  "dur": 0.18,
+  "intents": [],
+  "species": "foley",
+  "rms": -30,
+  "hp": 300,
+  "rate": 1.25,
+  "trim": true,
+  "kind": "foley",
+  "foley": "step_floor"
+ },
+ {
+  "id": "foley_step_floor_03",
+  "src": "kenney-footstep-carpet-2",
+  "start": null,
+  "dur": 0.18,
+  "intents": [],
+  "species": "foley",
+  "rms": -30,
+  "hp": 300,
+  "rate": 1.25,
+  "trim": true,
+  "kind": "foley",
+  "foley": "step_floor"
+ },
+ {
+  "id": "foley_step_floor_04",
+  "src": "kenney-footstep-carpet-3",
+  "start": null,
+  "dur": 0.18,
+  "intents": [],
+  "species": "foley",
+  "rms": -30,
+  "hp": 300,
+  "rate": 1.25,
+  "trim": true,
+  "kind": "foley",
+  "foley": "step_floor"
+ },
+ {
+  "id": "foley_step_floor_05",
+  "src": "kenney-footstep-carpet-4",
+  "start": null,
+  "dur": 0.18,
+  "intents": [],
+  "species": "foley",
+  "rms": -30,
+  "hp": 300,
+  "rate": 1.25,
+  "trim": true,
+  "kind": "foley",
+  "foley": "step_floor"
+ },
+ {
+  "id": "foley_step_grass_01",
+  "src": "kenney-footstep-grass-0",
+  "start": null,
+  "dur": 0.18,
+  "intents": [],
+  "species": "foley",
+  "rms": -30,
+  "hp": 300,
+  "rate": 1.25,
+  "trim": true,
+  "kind": "foley",
+  "foley": "step_grass"
+ },
+ {
+  "id": "foley_step_grass_02",
+  "src": "kenney-footstep-grass-1",
+  "start": null,
+  "dur": 0.18,
+  "intents": [],
+  "species": "foley",
+  "rms": -30,
+  "hp": 300,
+  "rate": 1.25,
+  "trim": true,
+  "kind": "foley",
+  "foley": "step_grass"
+ },
+ {
+  "id": "foley_step_grass_03",
+  "src": "kenney-footstep-grass-2",
+  "start": null,
+  "dur": 0.18,
+  "intents": [],
+  "species": "foley",
+  "rms": -30,
+  "hp": 300,
+  "rate": 1.25,
+  "trim": true,
+  "kind": "foley",
+  "foley": "step_grass"
+ },
+ {
+  "id": "foley_step_grass_04",
+  "src": "kenney-footstep-grass-3",
+  "start": null,
+  "dur": 0.18,
+  "intents": [],
+  "species": "foley",
+  "rms": -30,
+  "hp": 300,
+  "rate": 1.25,
+  "trim": true,
+  "kind": "foley",
+  "foley": "step_grass"
+ },
+ {
+  "id": "foley_step_grass_05",
+  "src": "kenney-footstep-grass-4",
+  "start": null,
+  "dur": 0.18,
+  "intents": [],
+  "species": "foley",
+  "rms": -30,
+  "hp": 300,
+  "rate": 1.25,
+  "trim": true,
+  "kind": "foley",
+  "foley": "step_grass"
+ },
+ {
+  "id": "foley_step_dirt_01",
+  "src": "kenney-footstep-grass-0",
+  "start": null,
+  "dur": 0.18,
+  "intents": [],
+  "species": "foley",
+  "rms": -31,
+  "hp": 300,
+  "rate": 1.1,
+  "trim": true,
+  "kind": "foley",
+  "foley": "step_dirt"
+ },
+ {
+  "id": "foley_step_dirt_02",
+  "src": "kenney-footstep-grass-1",
+  "start": null,
+  "dur": 0.18,
+  "intents": [],
+  "species": "foley",
+  "rms": -31,
+  "hp": 300,
+  "rate": 1.1,
+  "trim": true,
+  "kind": "foley",
+  "foley": "step_dirt"
+ },
+ {
+  "id": "foley_step_dirt_03",
+  "src": "kenney-footstep-grass-2",
+  "start": null,
+  "dur": 0.18,
+  "intents": [],
+  "species": "foley",
+  "rms": -31,
+  "hp": 300,
+  "rate": 1.1,
+  "trim": true,
+  "kind": "foley",
+  "foley": "step_dirt"
+ },
+ {
+  "id": "foley_step_dirt_04",
+  "src": "kenney-footstep-grass-3",
+  "start": null,
+  "dur": 0.18,
+  "intents": [],
+  "species": "foley",
+  "rms": -31,
+  "hp": 300,
+  "rate": 1.1,
+  "trim": true,
+  "kind": "foley",
+  "foley": "step_dirt"
+ },
+ {
+  "id": "foley_step_dirt_05",
+  "src": "kenney-footstep-grass-4",
+  "start": null,
+  "dur": 0.18,
+  "intents": [],
+  "species": "foley",
+  "rms": -31,
+  "hp": 300,
+  "rate": 1.1,
+  "trim": true,
+  "kind": "foley",
+  "foley": "step_dirt"
+ },
+ {
+  "id": "foley_land_01",
+  "src": "kenney-impact-light-0",
+  "start": null,
+  "dur": 0.3,
+  "intents": [],
+  "species": "foley",
+  "rms": -28,
+  "hp": 120,
+  "trim": true,
+  "kind": "foley",
+  "foley": "land"
+ },
+ {
+  "id": "foley_land_02",
+  "src": "kenney-impact-light-1",
+  "start": null,
+  "dur": 0.3,
+  "intents": [],
+  "species": "foley",
+  "rms": -28,
+  "hp": 120,
+  "trim": true,
+  "kind": "foley",
+  "foley": "land"
+ },
+ {
+  "id": "foley_land_03",
+  "src": "kenney-impact-light-2",
+  "start": null,
+  "dur": 0.3,
+  "intents": [],
+  "species": "foley",
+  "rms": -28,
+  "hp": 120,
+  "trim": true,
+  "kind": "foley",
+  "foley": "land"
+ },
+ {
+  "id": "foley_land_04",
+  "src": "kenney-impact-light-3",
+  "start": null,
+  "dur": 0.3,
+  "intents": [],
+  "species": "foley",
+  "rms": -28,
+  "hp": 120,
+  "trim": true,
+  "kind": "foley",
+  "foley": "land"
+ },
+ {
+  "id": "foley_land_05",
+  "src": "kenney-impact-light-4",
+  "start": null,
+  "dur": 0.3,
+  "intents": [],
+  "species": "foley",
+  "rms": -28,
+  "hp": 120,
+  "trim": true,
+  "kind": "foley",
+  "foley": "land"
+ },
+ {
+  "id": "foley_scratch_01",
+  "src": "bb-scratchy-fabric-1",
+  "start": null,
+  "dur": 0.9,
+  "intents": [],
+  "species": "foley",
+  "rms": -30,
+  "hp": 300,
+  "trim": true,
+  "kind": "foley",
+  "foley": "scratch"
+ },
+ {
+  "id": "foley_scratch_02",
+  "src": "bb-scratchy-fabric-2",
+  "start": null,
+  "dur": 0.9,
+  "intents": [],
+  "species": "foley",
+  "rms": -30,
+  "hp": 300,
+  "trim": true,
+  "kind": "foley",
+  "foley": "scratch"
+ },
+ {
+  "id": "foley_scratch_03",
+  "src": "bb-scratchy-fabric-3",
+  "start": null,
+  "dur": 0.9,
+  "intents": [],
+  "species": "foley",
+  "rms": -30,
+  "hp": 300,
+  "trim": true,
+  "kind": "foley",
+  "foley": "scratch"
+ },
+ {
+  "id": "foley_body_01",
+  "src": "bb-course-fabric-1",
+  "start": null,
+  "dur": 0.8,
+  "intents": [],
+  "species": "foley",
+  "rms": -32,
+  "hp": 200,
+  "trim": true,
+  "kind": "foley",
+  "foley": "body"
+ },
+ {
+  "id": "foley_body_02",
+  "src": "bb-course-fabric-2",
+  "start": null,
+  "dur": 0.8,
+  "intents": [],
+  "species": "foley",
+  "rms": -32,
+  "hp": 200,
+  "trim": true,
+  "kind": "foley",
+  "foley": "body"
+ },
+ {
+  "id": "foley_body_03",
+  "src": "bb-course-fabric-3",
+  "start": null,
+  "dur": 0.8,
+  "intents": [],
+  "species": "foley",
+  "rms": -32,
+  "hp": 200,
+  "trim": true,
+  "kind": "foley",
+  "foley": "body"
+ },
+ {
+  "id": "foley_body_04",
+  "src": "bb-course-fabric-4",
+  "start": null,
+  "dur": 0.8,
+  "intents": [],
+  "species": "foley",
+  "rms": -32,
+  "hp": 200,
+  "trim": true,
+  "kind": "foley",
+  "foley": "body"
+ },
+ {
+  "id": "foley_body_05",
+  "src": "bb-course-fabric-5",
+  "start": null,
+  "dur": 0.8,
+  "intents": [],
+  "species": "foley",
+  "rms": -32,
+  "hp": 200,
+  "trim": true,
+  "kind": "foley",
+  "foley": "body"
+ }
+]

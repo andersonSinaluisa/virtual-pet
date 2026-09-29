@@ -15,7 +15,7 @@ import { DEFAULT_GLOW, Glow } from '@/components/ui/Glow';
 import { Icon } from '@/components/ui/Icon';
 import { Squishable } from '@/components/ui/Squishable';
 import { Text } from '@/components/ui/Text';
-import { AudioManager } from '@/services/AudioManager';
+import { PetVoiceBridge } from '@/services/audio/PetVoiceBridge';
 import { haptic } from '@/services/haptics';
 import { useStore } from '@/state/createStore';
 import { sessionStore } from '@/state/stores';
@@ -33,7 +33,7 @@ export default function FirstEncounter() {
     bounce.set(withSequence(withSpring(1.04, { damping: 6 }), withSpring(1, { damping: 10 })));
     tilt.set(withSequence(withTiming(-3, { duration: 120 }), withTiming(3, { duration: 160 }), withTiming(0, { duration: 140 })));
     haptic('pet');
-    AudioManager.play('petHappy');
+    PetVoiceBridge.preview('dog');
     setGreeted((n) => n + 1);
   };
 

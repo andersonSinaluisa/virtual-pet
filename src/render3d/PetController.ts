@@ -11,6 +11,7 @@
 import type * as THREE from 'three';
 
 import type { Action } from '@/core/brain/Actions';
+import type { SpeciesKey } from '@/core/persistence/SaveGame';
 import type { Pet } from '@/core/simulation/Pet';
 
 import type { Pet3D } from './Pet3D';
@@ -18,12 +19,23 @@ import type { ExpressionName } from './PetExpressions';
 import type { Arms, Locomotion, Special, Tail } from './PetAnimator';
 import type { FxName } from './PetFX';
 
+// v8: lo que la VOZ pide a la cara (lo produce el puente de audio; aquí no se decide nada)
+export interface VoiceCue {
+  intent: string | null;
+  until: number; // Date.now() hasta el que dura la reacción a un one-shot
+  purr: number; // nivel del ronroneo (gato: ojos entornados, se deja acariciar)
+  pant: number; // jadeo (perro: lengua fuera)
+  teethPurr: number; // ronroneo dental (conejo: orejas relajadas)
+}
+
 export interface ControllerInput {
   active: readonly Action[];
   pet: Pet;
   touching: boolean;
   lookTarget: THREE.Vector3 | null;
   renderSpeed: number;
+  species?: SpeciesKey;
+  voice?: VoiceCue | null;
 }
 
 export class PetController {
@@ -33,9 +45,12 @@ export class PetController {
     this.pet = pet;
   }
 
-  update({ active, pet, touching, lookTarget, renderSpeed }: ControllerInput): void {
+  update({ active, pet, touching, lookTarget, renderSpeed, species, voice }: ControllerInput): void {
     if (!this.pet) return;
     const A = new Set(active), anim = this.pet.animator;
+    const talking = !!voice && voice.until > Date.now() && !pet.asleep;
+    const purring = !!voice && voice.purr > 0.15 && !pet.asleep;
+    const panting = !!voice && voice.pant > 0.1 && !pet.asleep;
     const moving = (pet.speed || 0) > 0.12 || renderSpeed > 0.25;
     const running = (pet.speed || 0) > 1.4;
 
@@ -54,8 +69,9 @@ export class PetController {
     if (A.has('CRY')) ex.push('crying');
     if (A.has('EAT')) ex.push('eating');
     if (A.has('DRINK')) ex.push('drinking');
-    if (A.has('MAKE_SOUND')) ex.push('talking');
-    if (A.has('PLAY') || A.has('DANCE')) ex.push('openHappy');
+    if (A.has('MAKE_SOUND') || talking) ex.push('talking');
+    if (purring) ex.push('sleeping', 'happy'); // ojos entornados de gusto (mezcla, no dormido)
+    if (A.has('PLAY') || A.has('DANCE') || panting) ex.push('openHappy');
     else if (A.has('SMILE') || A.has('GREET') || touching) ex.push('happy');
     if (A.has('INVESTIGATE') || A.has('LOOK_AT_OBJECT')) ex.push('curious');
     if (A.has('ASK_ATTENTION') && !ex.length) ex.push('sad');
@@ -93,6 +109,11 @@ export class PetController {
     if (A.has('DRINK') && !moving) sp.push('lap');
     if (A.has('MAKE_SOUND')) sp.push('bark');
     if (A.has('LOOK_AT_OBJECT') || A.has('APPROACH')) sp.push('alert');
+    // v8: la voz también se ve (breve): cabeza y orejas al vocalizar; cuerpo al ser acariciado
+    if (talking) sp.push('vocal');
+    if (purring) sp.push('purr');
+    if (species === 'bunny' && (touching || (voice?.teethPurr ?? 0) > 0.05)) sp.push('relaxEars');
+    if (species === 'bear' && touching && !pet.asleep) sp.push('wiggle');
     anim.setSpecial(sp);
 
     // HEAD

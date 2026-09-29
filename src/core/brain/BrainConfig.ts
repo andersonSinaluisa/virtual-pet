@@ -18,6 +18,13 @@
  * VERSIÓN 3 (app móvil): se añade el sensor `playerCalling` (el jugador
  * llama a la mascota: "¡Milo, aquí!"). Va al final de la capa de sensores y
  * NO modifica ningún peso existente. Ver docs/mobile-migration-plan.md §6.
+ *
+ * VERSIÓN 6 (mundo vivo, docs/living-world.md): sensores nuevos al FINAL de
+ * la capa (movimiento, oído, novedad del sonido, familiaridad, lugar poco
+ * familiar, espacio abierto, actividad ambiental), un canal de objeto para
+ * la caja (`seesBox` → `boxAttention`, igual que los demás: sin preferencia
+ * de nacimiento) y un segundo modulador de plasticidad: AMENAZA (el miedo
+ * puede aprenderse y extinguirse). Ningún peso existente cambia.
  */
 import type { Action } from './Actions';
 
@@ -30,6 +37,8 @@ export const SENSOR_KEYS = [
   // v5: contexto (ver docs/emergent-routines.md)
   'time00', 'time04', 'time08', 'time12', 'time16', 'time20',
   'lightLevel', 'zoneBed', 'zoneFood', 'zonePlay', 'zoneWindow', 'playerReturned', 'recentActivity',
+  // v6: mundo vivo (ver docs/living-world.md)
+  'seesBox', 'objectMoving', 'soundHeard', 'soundNovelty', 'familiarObject', 'unfamiliarPlace', 'openSpace', 'ambientActivity',
 ] as const;
 export type SensorKey = (typeof SENSOR_KEYS)[number];
 
@@ -37,6 +46,7 @@ export const CIRCUIT_KEYS = [
   'feedingCircuit', 'drinkingCircuit', 'restCircuit', 'activityCircuit', 'playCircuit', 'socialCircuit',
   'lonelinessCircuit', 'followCircuit', 'joyCircuit', 'distressCircuit', 'curiosityCircuit', 'fearCircuit',
   'ballAttention', 'teddyAttention', 'ropeAttention', 'duckAttention',
+  'boxAttention', // v6
 ] as const;
 export type CircuitKey = (typeof CIRCUIT_KEYS)[number];
 
@@ -73,7 +83,14 @@ export interface BrainWeightsData {
  *   'all'     → también las del jugador y los eventos del juego
  * Sin canales, cada ❤️ reforzaba cualquier vía tónica activa (medido).
  */
-export type ModulationChannel = 'natural' | 'all';
+export type ModulationChannel = 'natural' | 'all' | 'threat';
+/*
+ *   'threat'  → v6: SEGUNDO modulador, independiente de la recompensa. Un susto real
+ *               (reflejo de miedo con causa en el mundo) REFUERZA las vías de estímulo →
+ *               miedo que acababan de participar; acercarse/investigar sin que pase nada
+ *               las DEBILITA (extinción). Con recompensa (Δw ∝ r) el miedo no podría
+ *               aprenderse: un susto negativo lo debilitaría. Ver docs/living-world.md §Aprendizaje.
+ */
 
 type RuleBase = { min?: number; max?: number; span?: number; rate?: number; channel?: ModulationChannel };
 export type PlasticityRule =
@@ -102,12 +119,12 @@ export interface BrainConfig extends BrainWeightsData {
   plasticity: PlasticityConfig;
 }
 
-export const BRAIN_CONFIG_VERSION = 5;
+export const BRAIN_CONFIG_VERSION = 6;
 
 // v5: neuronas de reloj (código de población en anillo) en el orden de CLOCK_PHASES_HOURS
 export const CLOCK_SENSORS = ['time00', 'time04', 'time08', 'time12', 'time16', 'time20'] as const satisfies readonly SensorKey[];
 export const ZONE_SENSORS = ['zoneBed', 'zoneFood', 'zonePlay', 'zoneWindow'] as const satisfies readonly SensorKey[];
-const CONTEXT_SENSORS: readonly SensorKey[] = [...CLOCK_SENSORS, 'lightLevel', 'darkness', ...ZONE_SENSORS, 'recentActivity'];
+const CONTEXT_SENSORS: readonly SensorKey[] = [...CLOCK_SENSORS, 'lightLevel', 'darkness', ...ZONE_SENSORS, 'recentActivity', 'openSpace', 'ambientActivity'];
 
 /*
  * CANALES DE OBJETO (v4): cada objeto identificable tiene un sensor propio y
@@ -119,6 +136,7 @@ export const OBJECT_CHANNELS = [
   { kind: 'teddy', sensor: 'seesTeddy', attention: 'teddyAttention' },
   { kind: 'rope', sensor: 'seesRope', attention: 'ropeAttention' },
   { kind: 'duck', sensor: 'seesDuck', attention: 'duckAttention' },
+  { kind: 'mysteryBox', sensor: 'seesBox', attention: 'boxAttention' }, // v6
 ] as const satisfies readonly { kind: string; sensor: SensorKey; attention: CircuitKey }[];
 
 const OBJECT_SENSORS = OBJECT_CHANNELS.map((c) => c.sensor);
@@ -171,6 +189,15 @@ const BASE_BRAIN_CONFIG: BrainConfig = {
     { key: 'zoneWindow', label: 'zona de la ventana', group: 'contexto', gain: 0.3 },
     { key: 'playerReturned', label: 'acabas de volver', group: 'contexto', gain: 0.5, event: true },
     { key: 'recentActivity', label: 'actividad reciente', group: 'contexto', gain: 0.3 },
+    // v6: mundo vivo. Percepción espacial (FOV/oído) y memoria de exposición, nunca "si es una caja…"
+    { key: 'seesBox', label: 've la caja', group: 'entorno', gain: 0.35 },
+    { key: 'objectMoving', label: 'algo se mueve', group: 'entorno', gain: 0.4 },
+    { key: 'soundHeard', label: 'oye algo', group: 'entorno', gain: 0.5, event: true },
+    { key: 'soundNovelty', label: 'sonido desconocido', group: 'entorno', gain: 0.5, event: true },
+    { key: 'familiarObject', label: 'objeto conocido', group: 'entorno', gain: 0.3 },
+    { key: 'unfamiliarPlace', label: 'lugar poco conocido', group: 'contexto', gain: 0.35 },
+    { key: 'openSpace', label: 'espacio abierto', group: 'contexto', gain: 0.3 },
+    { key: 'ambientActivity', label: 'actividad alrededor', group: 'contexto', gain: 0.3 },
   ],
 
   // ---- CAPA 2: circuitos internos (una neurona LIF cada uno) ----
@@ -192,6 +219,7 @@ const BASE_BRAIN_CONFIG: BrainConfig = {
     { key: 'teddyAttention', label: 'atención al peluche' },
     { key: 'ropeAttention', label: 'atención a la cuerda' },
     { key: 'duckAttention', label: 'atención al patito' },
+    { key: 'boxAttention', label: 'atención a la caja' }, // v6
   ],
 
   // ---- CAPA 3: salidas = ACTION_LIST (una neurona por acción) ----
@@ -245,6 +273,15 @@ const BASE_BRAIN_CONFIG: BrainConfig = {
     zoneWindow: { curiosityCircuit: 0.1 },
     playerReturned: { socialCircuit: 0.3, joyCircuit: 0.2, followCircuit: 0.1 },
     recentActivity: { restCircuit: 0.1, activityCircuit: -0.1 },
+    // v6: mundo vivo. Mismos pesos para todas las mascotas; lo que cambie será aprendido
+    seesBox: { boxAttention: 0.55, curiosityCircuit: 0.1, playCircuit: 0.1 },
+    objectMoving: { curiosityCircuit: 0.3, playCircuit: 0.25 },
+    soundHeard: { curiosityCircuit: 0.3, fearCircuit: 0.1, restCircuit: -0.25 },
+    soundNovelty: { curiosityCircuit: 0.2, fearCircuit: 0.3 },
+    familiarObject: { playCircuit: 0.15, curiosityCircuit: -0.1, fearCircuit: -0.25 },
+    unfamiliarPlace: { fearCircuit: 0.25, curiosityCircuit: 0.3, followCircuit: 0.25, restCircuit: -0.2 },
+    openSpace: { activityCircuit: 0.25, playCircuit: 0.1 },
+    ambientActivity: { curiosityCircuit: 0.15, restCircuit: -0.15 },
   },
 
   /*
@@ -271,6 +308,7 @@ const BASE_BRAIN_CONFIG: BrainConfig = {
     teddyAttention: { LOOK_AT_OBJECT: 0.35, INVESTIGATE: 0.25, PLAY: 0.2, PICK_UP_OBJECT: 0.2 },
     ropeAttention: { LOOK_AT_OBJECT: 0.35, INVESTIGATE: 0.25, PLAY: 0.2, PICK_UP_OBJECT: 0.2 },
     duckAttention: { LOOK_AT_OBJECT: 0.35, INVESTIGATE: 0.25, PLAY: 0.2, PICK_UP_OBJECT: 0.2 },
+    boxAttention: { LOOK_AT_OBJECT: 0.35, INVESTIGATE: 0.25, PLAY: 0.2, PICK_UP_OBJECT: 0.2 },
   },
 
   /*
@@ -310,6 +348,10 @@ const BASE_BRAIN_CONFIG: BrainConfig = {
       // v5: contexto (hora, luz, lugar, actividad reciente) → circuitos de conducta, aprendido del RESULTADO
       // (canal natural: solo consecuencias sobre necesidades; ver docs/routine-results.md para las variantes medidas)
       { layer: 'sensorToCircuit', from: CONTEXT_SENSORS, to: ['restCircuit', 'activityCircuit', 'playCircuit', 'curiosityCircuit', 'feedingCircuit'], min: -0.3, max: 0.6, channel: 'natural' },
+      // v6: lo nuevo y lo que se mueve → curiosidad/juego: explorar y que salga BIEN refuerza la curiosidad
+      { layer: 'sensorToCircuit', from: ['newObjectDetected', 'objectMoving', 'soundNovelty'], to: ['curiosityCircuit', 'playCircuit'], min: 0, max: 1.0, rate: 0.5 },
+      // v6: AMENAZA. Estímulos del mundo → miedo: un susto real los refuerza; la exposición sin consecuencias los extingue
+      { layer: 'sensorToCircuit', from: [...OBJECT_SENSORS, 'newObjectDetected', 'objectMoving', 'soundHeard', 'soundNovelty', 'unfamiliarPlace'], to: ['fearCircuit'], min: 0, max: 1.0, rate: 3, channel: 'threat' },
       // v5: volver a casa → recibirte (lo refuerzan tus ❤️)
       { layer: 'sensorToCircuit', from: ['playerReturned'], to: ['socialCircuit', 'joyCircuit', 'followCircuit'], min: 0, max: 0.9, rate: 3 },
       {
@@ -342,6 +384,8 @@ export const BRAIN_PRESETS: Readonly<Record<PresetKey, { label: string; patch: W
       ['circuitToAction', 'curiosityCircuit', 'INVESTIGATE', 0.9],
       ['circuitToAction', 'curiosityCircuit', 'PICK_UP_OBJECT', 0.6],
       ['sensorToCircuit', 'loudSound', 'fearCircuit', 0.6],
+      ['sensorToCircuit', 'objectMoving', 'curiosityCircuit', 0.5],
+      ['sensorToCircuit', 'unfamiliarPlace', 'curiosityCircuit', 0.5],
     ],
   },
   miedoso: {
@@ -354,6 +398,8 @@ export const BRAIN_PRESETS: Readonly<Record<PresetKey, { label: string; patch: W
       ['circuitToAction', 'fearCircuit', 'HIDE', 1.0],
       ['circuitToAction', 'fearCircuit', 'GET_SCARED', 1.1],
       ['circuitToAction', 'socialCircuit', 'APPROACH', 0.5],
+      ['sensorToCircuit', 'soundNovelty', 'fearCircuit', 0.5],
+      ['sensorToCircuit', 'unfamiliarPlace', 'fearCircuit', 0.45],
     ],
   },
   apegado: {

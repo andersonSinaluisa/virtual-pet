@@ -64,7 +64,9 @@ export function interpretRoutines(habits: readonly Habit[], name: string): Routi
   const morning = get(habits, 'MORNING_EXPLORATION');
   if (wake || morning) {
     const lines: string[] = [];
-    if (morning) lines.push(`Últimamente le gusta explorar la habitación por las mañanas.`);
+    // v7: el lugar sale de los episodios (dónde exploró de verdad), nunca de una regla
+    const outdoors = morning?.params.area === 'jardin' || morning?.params.area === 'parque';
+    if (morning) lines.push(outdoors ? `Suele salir ${morning.params.area === 'jardin' ? 'al jardín' : 'al parque'} por las mañanas.` : `Últimamente le gusta explorar la habitación por las mañanas.`);
     if (wake) lines.push(`Después de despertar suele ponerse a jugar o a curiosear.`);
     cards.push({ id: 'morning', emoji: '☀️', title: 'Al despertar', lines, days: Math.max(wake?.days ?? 0, morning?.days ?? 0), confidence: Math.max(wake?.confidence ?? 0, morning?.confidence ?? 0) });
   }

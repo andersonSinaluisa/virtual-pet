@@ -16,7 +16,7 @@
  */
 import type { Action } from '../brain/Actions';
 import { Brain } from '../brain/Brain';
-import { OBJECT_CHANNELS, type BrainConfig, type SensorKey } from '../brain/BrainConfig';
+import { OBJECT_CHANNELS, getSensorWeight, type BrainConfig, type CircuitKey, type SensorKey } from '../brain/BrainConfig';
 import type { Network } from '../neural/Network';
 import type { NeuronId } from '../neural/Neuron';
 import { ActionSystem } from './ActionSystem';
@@ -27,6 +27,8 @@ import { Sensors } from './Sensors';
 import type { SimConfig } from './SimConfig';
 import { SpikeTrace } from './SpikeTrace';
 import { World, type Perception, type WorldEvent } from './World';
+
+const MOTIVE_CIRCUITS: readonly CircuitKey[] = ['playCircuit', 'curiosityCircuit', 'joyCircuit', 'fearCircuit'];
 
 export interface StepEvent extends WorldEvent {
   value: number;
@@ -70,6 +72,8 @@ export class Simulation {
   overrides: Partial<Record<SensorKey, SensorOverride>> = {};
   // Actividad reciente de las neuronas de atención por objeto (v4)
   readonly attention: Partial<Record<(typeof OBJECT_CHANNELS)[number]['kind'], number>> = {};
+  // v7: actividad reciente de los circuitos de motivación (EMA de spikes) → atención "de arriba abajo"
+  readonly motives: Partial<Record<CircuitKey, number>> = {};
 
   constructor(readonly config: SimConfig, readonly brainConfig: BrainConfig) {
     this.world = new World(config);
@@ -91,6 +95,7 @@ export class Simulation {
 
   step(opts: StepOptions = {}): StepResult {
     this.world.attention = this.attention;
+    this.world.topDown = this.topDown();
     this.world.update(opts.timeScale ?? 1);
     const events = this.world.drainEvents();
     const perception = this.applyOverrides(this.world.perceive());
@@ -104,6 +109,8 @@ export class Simulation {
     this.actionSystem.trigger(actions);
     const active = this.actionSystem.execute(this.world, this.movement);
     const conflicts = this.conflicts.check(active);
+    // v7: lo que las acciones cambiaron en el mundo ESTE tick (la caja se abrió, cruzó una puerta)
+    events.push(...this.world.drainEvents());
 
     this.last = {
       tick: this.network.tickCount,
@@ -127,10 +134,31 @@ export class Simulation {
       const id = this.brain.circuitKeyToNeuron[ch.attention];
       this.attention[ch.kind] = (this.attention[ch.kind] ?? 0) * decay + (spiked.includes(id) ? 1 : 0);
     }
+    for (const c of MOTIVE_CIRCUITS) {
+      const id = this.brain.circuitKeyToNeuron[c];
+      this.motives[c] = (this.motives[c] ?? 0) * decay + (spiked.includes(id) ? 1 : 0);
+    }
+  }
+
+  /*
+   * v7: COMPETENCIA SESGADA (atención de arriba abajo). Si ahora mismo está activo el
+   * circuito de juego (o de curiosidad, alegría, miedo), los objetos cuya vía sensorial
+   * alimenta ESE circuito ganan atención: Σ_c w(ve X → c) · actividad(c). Los pesos son
+   * los APRENDIDOS: es la "asociación aprendida" de cada mascota, no una regla por tipo.
+   */
+  private topDown(): Partial<Record<(typeof OBJECT_CHANNELS)[number]['kind'], number>> {
+    const out: Partial<Record<(typeof OBJECT_CHANNELS)[number]['kind'], number>> = {};
+    for (const ch of OBJECT_CHANNELS) {
+      let v = 0;
+      for (const c of MOTIVE_CIRCUITS) v += Math.max(0, getSensorWeight(this.brainConfig, ch.sensor, c)) * Math.min(1, this.motives[c] ?? 0);
+      out[ch.kind] = v;
+    }
+    return out;
   }
 
   reset(): void {
     for (const k of Object.keys(this.attention) as (keyof typeof this.attention)[]) delete this.attention[k];
+    for (const k of Object.keys(this.motives) as CircuitKey[]) delete this.motives[k];
     this.world.reset();
     this.network.reset();
     this.actionSystem.reset();

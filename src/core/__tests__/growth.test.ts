@@ -12,7 +12,7 @@ import { GrowthSystem, getPlasticityMultiplier, newGrowthState } from '../growth
 import { LIFE_STAGES, stageIndex } from '../growth/LifeStage';
 import { evaluatePreference, trainWithObject } from '../learning/experiments';
 import { migrateSave } from '../persistence/migrations';
-import { DEFAULT_SETTINGS } from '../persistence/SaveGame';
+import { CURRENT_SAVE_VERSION, DEFAULT_SETTINGS } from '../persistence/SaveGame';
 import { seededRng } from '../random';
 import { detectHabits } from '../routines/HabitDetector';
 import { liveDays } from '../routines/experiments';
@@ -206,7 +206,7 @@ describe('Save v4', () => {
     const save = JSON.parse(JSON.stringify(s.toSave(DEFAULT_SETTINGS, clock.now())));
     const v3 = { ...save, saveVersion: 3, growth: { xp: 999 }, profile: { ...save.profile, adoptedAt: T0 - 400 * DAY } };
     const m = migrateSave(v3);
-    expect(m.saveVersion).toBe(4);
+    expect(m.saveVersion).toBe(CURRENT_SAVE_VERSION); // v3 → v4 → v5 en cadena
     expect(m.growth.stage).toBe('BABY');
     expect(m.growth.stageStartedAt).toBe(save.savedAt);
     expect(m.growth.bornAt).toBe(T0 - 400 * DAY);

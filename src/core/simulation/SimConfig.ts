@@ -7,7 +7,9 @@
  *
  * Valores idénticos al prototipo web salvo los marcados "móvil".
  */
-import { defaultRng, type Rng } from '../random';
+import { defaultRng, seededRng, type Rng } from '../random';
+import { DEFAULT_DIRECTOR, type DirectorConfig } from '../world/AmbientEventDirector';
+import { DEFAULT_PERCEPTION, type PerceptionConfig } from '../world/Perception';
 
 export const PET_STATS = ['hunger', 'thirst', 'fatigue', 'boredom', 'affection', 'energy', 'fear', 'curiosity'] as const;
 export type PetStat = (typeof PET_STATS)[number];
@@ -15,6 +17,10 @@ export type PetStats = Record<PetStat, number>;
 
 export interface SimConfig {
   rng: Rng;
+  // v7: rng propio de los microeventos (no gasta el de la simulación; reproducible con semilla)
+  ambientRng: Rng;
+  perception: PerceptionConfig; // FOV, oído, sentido cercano
+  ambient: DirectorConfig; // microeventos (AmbientEventDirector)
   simulation: {
     baseTicksPerSecond: number;
     speeds: number[];
@@ -37,6 +43,7 @@ export interface SimConfig {
     baseSpeed: number;
     runMultiplier: number;
     restMultiplier: number;
+    turnRate: number; // v7: radianes por tick que puede girar (orientación → campo de visión)
   };
   world: {
     initialFood: number;
@@ -95,9 +102,12 @@ export function applyPhysiology(cfg: SimConfig, profile: PhysiologyProfile, body
   cfg.movement.baseSpeed = base.movement.baseSpeed * body.speed;
 }
 
-export function createSimConfig(overrides: { rng?: Rng } = {}): SimConfig {
+export function createSimConfig(overrides: { rng?: Rng; ambientRng?: Rng } = {}): SimConfig {
   return {
     rng: overrides.rng ?? defaultRng,
+    ambientRng: overrides.ambientRng ?? seededRng(20260929),
+    perception: { ...DEFAULT_PERCEPTION },
+    ambient: { ...DEFAULT_DIRECTOR },
     simulation: {
       baseTicksPerSecond: 3,
       speeds: [0.25, 0.5, 1, 2, 4],
@@ -125,6 +135,7 @@ export function createSimConfig(overrides: { rng?: Rng } = {}): SimConfig {
       baseSpeed: 0.03,
       runMultiplier: 2.3,
       restMultiplier: 0.2,
+      turnRate: 0.9,
     },
     world: {
       initialFood: 2,

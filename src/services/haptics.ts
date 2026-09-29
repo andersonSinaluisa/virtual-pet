@@ -5,7 +5,7 @@
  */
 import * as Haptics from 'expo-haptics';
 
-export type HapticKind = 'pet' | 'object' | 'discovery' | 'memory' | 'select';
+export type HapticKind = 'pet' | 'object' | 'discovery' | 'memory' | 'select' | 'purr';
 
 let enabled = true;
 let last = 0;
@@ -22,6 +22,8 @@ export function haptic(kind: HapticKind): void {
   const run = () => {
     switch (kind) {
       case 'pet': return Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft);
+      // Ronroneo: pulsos sueltos y muy suaves (no una vibración continua)
+      case 'purr': return Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Soft);
       case 'object': return Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       case 'select': return Haptics.selectionAsync();
       case 'discovery': return Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

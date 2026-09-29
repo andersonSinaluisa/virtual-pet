@@ -6,6 +6,7 @@
  * Las preferencias son EVIDENCIA acumulada (no una etiqueta).
  */
 import type { Action } from '../brain/Actions';
+import { ExplorationMemory, emptyExploration } from '../world/ExplorationMemory';
 import type {
   BehaviorStats, Discovery, EpisodeRecord, Experience, ExperienceKind, HabitSnapshot, MemoryState, Moment, Preference, SubjectKey,
 } from './types';
@@ -25,7 +26,7 @@ export function emptyStats(): BehaviorStats {
 }
 
 export function emptyMemory(): MemoryState {
-  return { experiences: [], moments: [], preferences: {}, discoveries: [], stats: emptyStats(), routine: { episodes: [], snapshots: [] } };
+  return { experiences: [], moments: [], preferences: {}, discoveries: [], stats: emptyStats(), routine: { episodes: [], snapshots: [] }, exploration: emptyExploration() };
 }
 
 const MAX_EPISODES = 4000; // ~2 meses de conducta resumida
@@ -33,9 +34,13 @@ const MAX_SNAPSHOTS = 120;
 
 export class PetMemory {
   state: MemoryState;
+  // v7: lugares, objetos y sonidos conocidos. Comparte el objeto de estado (se guarda con la memoria)
+  exploration: ExplorationMemory;
 
   constructor(state: MemoryState = emptyMemory()) {
     this.state = state;
+    this.exploration = new ExplorationMemory(state.exploration);
+    this.state.exploration = this.exploration.state;
   }
 
   get experiences(): readonly Experience[] { return this.state.experiences; }
@@ -153,6 +158,7 @@ export class PetMemory {
 
   clear(): void {
     this.state = emptyMemory();
+    this.exploration.state = this.state.exploration as NonNullable<MemoryState['exploration']>;
   }
 
   exportState(): MemoryState {

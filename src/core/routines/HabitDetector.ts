@@ -163,7 +163,11 @@ export function detectHabits(episodes: readonly EpisodeRecord[], now: number): H
     const m = explores.reduce((s, x) => s + (x.item.minuteOfDay >= HABIT_RULES.morningFrom && x.item.minuteOfDay < HABIT_RULES.morningTo ? x.w : 0), 0) / Math.max(1e-9, nEff(explores));
     const expected = (HABIT_RULES.morningTo - HABIT_RULES.morningFrom) / 1440; // si fuera uniforme
     const b = base('MORNING_EXPLORATION', explores);
-    push({ ...b, confidence: Math.max(0, Math.min(1, (m - expected) / (1 - expected))) * evidenceFactor(nEff(explores), b.days), params: { share: m } });
+    // v7: ¿DÓNDE explora por las mañanas? (habitación, jardín…): solo si un lugar domina
+    const morningEx = explores.filter((x) => x.item.minuteOfDay >= HABIT_RULES.morningFrom && x.item.minuteOfDay < HABIT_RULES.morningTo);
+    const where = topShare(morningEx, (e) => e.area);
+    const area = where.key && where.share >= HABIT_RULES.minShare && (where.key === 'jardin' || where.key === 'parque') ? where.key : undefined;
+    push({ ...b, confidence: Math.max(0, Math.min(1, (m - expected) / (1 - expected))) * evidenceFactor(nEff(explores), b.days), params: { share: m, area } });
   }
   return out.sort((a, b) => b.confidence - a.confidence);
 }

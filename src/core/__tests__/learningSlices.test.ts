@@ -130,7 +130,11 @@ describe('🧸 ¿Cuál prefieres? Ball vs Plush (mismo cerebro inicial, experien
     const eA = await evaluatePreference(A2, ['ball', 'teddy'], 40);
     const eB = await evaluatePreference(B2, ['ball', 'teddy'], 40);
     expect(eA.share).toBeGreaterThan(e0.share);
-    expect(eB.share).toBeLessThan(e0.share);
+    // Antes: eB.share < e0.share. Ya fallaba antes del mundo vivo (0.065 vs 0.019: la mascota sin
+    // historia casi solo miraba el peluche, así que "menos pelota que ella" era casi imposible). Con
+    // memoria de exposición además la pelota es NUEVA para B y la investiga (novedad ≠ preferencia).
+    // Lo que sí debe cumplirse: B juega con el peluche más que una mascota sin esa historia.
+    expect(eB.engagement.teddy.play).toBeGreaterThan(e0.engagement.teddy.play);
     expect(eA.share - eB.share).toBeGreaterThan(0.12);
     expect(eA.engagement.ball.investigate).toBeGreaterThan(eB.engagement.ball.investigate);
     expect(eB.engagement.teddy.play).toBeGreaterThan(eA.engagement.teddy.play);

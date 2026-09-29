@@ -19,6 +19,7 @@ import { subjectLabel } from '../memory/subjects';
 import type { EpisodeRecord, SubjectKey } from '../memory/types';
 import type { GameSession } from '../session/GameSession';
 import type { PetStats } from './SimConfig';
+import { LOCATIONS, type LocationId } from '../world/Locations';
 
 export interface AwayReport {
   elapsedMs: number;
@@ -32,6 +33,10 @@ export interface AwayReport {
   slept: boolean;
   grewPending: boolean; // v6: alcanzó el momento de crecer mientras no estabas (se vivirá al volver)
   highlights: string[];
+  // v7: mismo mundo que online: solo pudo ir a donde físicamente podía (puerta abierta, su cuerpo)
+  locationsVisited: LocationId[];
+  startLocation: LocationId;
+  endLocation: LocationId;
 }
 
 export type YieldFn = () => Promise<void>;
@@ -54,6 +59,8 @@ export async function simulateAway(session: GameSession, elapsedMs: number, yiel
   const onsets: Partial<Record<Action, number>> = {};
   let slept = false;
 
+  const startLocation = world.location;
+  const visited = new Set<LocationId>([startLocation]);
   const wasPresent = world.player.present;
   world.setPlayerPresent(false);
   world.drainEvents(); // la salida del jugador no es un evento que la mascota "vea" ahora
@@ -73,6 +80,7 @@ export async function simulateAway(session: GameSession, elapsedMs: number, yiel
       const r = session.tick({ timeScale, offline: true });
       for (const a of r.active) if (!prev.has(a)) onsets[a] = (onsets[a] ?? 0) + 1;
       if (world.pet.asleep) slept = true;
+      visited.add(world.location);
     }
     done += n;
     await yieldFn();
@@ -87,13 +95,23 @@ export async function simulateAway(session: GameSession, elapsedMs: number, yiel
   const foodEaten = Math.max(0, food0 - world.foodSources().reduce((s, o) => s + o.amount, 0));
   const waterDrunk = Math.max(0, water0 - (world.firstOfType('water')?.amount ?? 0));
   const grewPending = !!session.growth.state.pending && session.growth.stage === stage0;
-  return { elapsedMs, simulatedTicks: ticks, timeScale, before, after, actionOnsets: onsets, foodEaten, waterDrunk, slept, grewPending, highlights: highlights(session.profile.name, onsets, { foodEaten, waterDrunk, slept, before, after, lived }) };
+  const locationsVisited = [...visited];
+  const hl = highlights(session.profile.name, onsets, { foodEaten, waterDrunk, slept, before, after, lived, place: LOCATIONS[world.location].label });
+  const toPlace = (l: LocationId) => { const lb = LOCATIONS[l].label; return lb.startsWith('el ') ? `al ${lb.slice(3)}` : `a ${lb}`; };
+  const newPlaces = locationsVisited.filter((l) => l !== startLocation);
+  if (newPlaces.length) {
+    hl.unshift(world.location === startLocation ? `Salió ${toPlace(newPlaces[0])} por su cuenta y luego volvió.` : `Se fue ${toPlace(world.location)} por su cuenta.`);
+  }
+  return {
+    elapsedMs, simulatedTicks: ticks, timeScale, before, after, actionOnsets: onsets, foodEaten, waterDrunk, slept, grewPending, highlights: hl,
+    locationsVisited, startLocation, endLocation: world.location,
+  };
 }
 
 function highlights(
   name: string,
   onsets: Partial<Record<Action, number>>,
-  x: { foodEaten: number; waterDrunk: number; slept: boolean; before: PetStats; after: PetStats; lived: readonly EpisodeRecord[] },
+  x: { foodEaten: number; waterDrunk: number; slept: boolean; before: PetStats; after: PetStats; lived: readonly EpisodeRecord[]; place: string },
 ): string[] {
   const out: string[] = [];
   const n = (a: Action) => onsets[a] ?? 0;
@@ -105,7 +123,7 @@ function highlights(
   const toys = [...new Set(x.lived.filter((e) => e.kind === 'play' && e.subject).map((e) => e.subject as SubjectKey))];
   if (toys.length) out.push(`Jugó con ${toys.slice(0, 2).map(subjectLabel).join(' y ')}.`);
   else if (n('PLAY') + n('PICK_UP_OBJECT') > 0) out.push(`Jugó un rato con sus juguetes.`);
-  if (n('EXPLORE') + n('INVESTIGATE') > 1) out.push(`Exploró la habitación y olfateó cosas.`);
+  if (n('EXPLORE') + n('INVESTIGATE') > 1) out.push(`Exploró ${x.place} y olfateó cosas.`);
   if (n('ASK_ATTENTION') + n('CRY') > 1) out.push(`Te echó de menos: miró varias veces hacia la puerta.`);
   if (n('HIDE') + n('GET_SCARED') > 0) out.push(`Algo lo asustó y buscó refugio.`);
   if (!out.length) {

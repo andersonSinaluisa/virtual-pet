@@ -20,12 +20,14 @@ interface Props {
   right?: ReactNode;
   left?: ReactNode;
   showProfile?: boolean;
+  /** Sin fondo ni sombra: para flotar sobre la escena 3D a pantalla completa */
+  floating?: boolean;
 }
 
-export function AppHeader({ title, overline = 'Milo Companion', right, left, showProfile = true }: Props) {
+export function AppHeader({ title, overline = 'Milo Companion', right, left, showProfile = true, floating = false }: Props) {
   const insets = useSafeAreaInsets();
   return (
-    <View style={[styles.root, { paddingTop: insets.top + 6 }]}>
+    <View style={[styles.root, floating ? styles.floating : null, { paddingTop: insets.top + 6 }]}>
       <View style={styles.row}>
         {left ?? <Image source={require('@/assets/images/brand/emblem-face.png')} style={styles.emblem} contentFit="cover" accessibilityIgnoresInvertColors />}
         <View style={styles.titles}>
@@ -43,6 +45,7 @@ export function AppHeader({ title, overline = 'Milo Companion', right, left, sho
 
 const styles = StyleSheet.create({
   root: { backgroundColor: alpha(colors.surface, 0.94), paddingBottom: 10, paddingHorizontal: spacing.margin, zIndex: 10, ...shadows.soft },
+  floating: { backgroundColor: 'transparent', boxShadow: 'none', elevation: 0 },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, minHeight: 44 },
   emblem: { width: 34, height: 34, borderRadius: 10 },
   titles: { flex: 1 },

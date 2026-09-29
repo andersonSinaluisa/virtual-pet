@@ -114,12 +114,55 @@ function novel(kind: ItemKind): THREE.Group {
       mesh(rbox(0.34, 0.3, 0.07, 0.02), M.glossy('#FFD166'), g, [0, 0.15, 0]);
       [-1, 1].forEach((s) => mesh(S(), M.glossy('#FFD166'), g, [0.06 * s, 0.32, 0], [0.07, 0.05, 0.04], [0, 0, 0.5 * s]));
       break;
-    case 'mysteryBox':
-      mesh(rbox(0.46, 0.42, 0.46, 0.06), M.plush('#F7D9CC'), g, [0, 0.21, 0]);
-      mesh(rbox(0.06, 0.44, 0.48, 0.02), M.plush('#B88A78'), g, [0, 0.22, 0]);
-      mesh(rbox(0.48, 0.44, 0.06, 0.02), M.plush('#B88A78'), g, [0, 0.22, 0]);
-      mesh(rbox(0.14, 0.03, 0.03, 0.01), M.flat('#763216'), g, [0, 0.44, 0]);
+    case 'mysteryBox': {
+      mesh(rbox(0.46, 0.38, 0.46, 0.06), M.plush('#F7D9CC'), g, [0, 0.19, 0]);
+      mesh(rbox(0.06, 0.4, 0.48, 0.02), M.plush('#B88A78'), g, [0, 0.2, 0]);
+      mesh(rbox(0.48, 0.4, 0.06, 0.02), M.plush('#B88A78'), g, [0, 0.2, 0]);
+      // v7: tapa con bisagra atrás (se abre cuando el mundo dice que la caja está abierta)
+      const hinge = new THREE.Group();
+      hinge.position.set(0, 0.4, -0.23);
+      g.add(hinge);
+      mesh(rbox(0.5, 0.05, 0.5, 0.02), M.plush('#F2CBB9'), hinge, [0, 0.02, 0.23]);
+      mesh(rbox(0.14, 0.03, 0.03, 0.01), M.flat('#763216'), hinge, [0, 0.06, 0.23]);
+      g.userData.lid = hinge;
       break;
+    }
+    case 'mirror': {
+      // Marco ovalado de pie; la luna es muy brillante (sin render-to-texture: barato en móvil)
+      mesh(new THREE.TorusGeometry(0.28, 0.035, 10, 40), M.glossy('#E7C27A'), g, [0, 0.4, 0], [0.8, 1.15, 1]);
+      mesh(new THREE.CircleGeometry(0.27, 40), new THREE.MeshPhysicalMaterial({ color: '#dfeefa', roughness: 0.02, metalness: 0.9, clearcoat: 1 }), g, [0, 0.4, 0.005], [0.8, 1.15, 1]);
+      mesh(cyl(0.03, 0.03, 0.1), M.glossy('#E7C27A'), g, [0, 0.05, 0]);
+      mesh(cyl(0.16, 0.18, 0.03), M.glossy('#E7C27A'), g, [0, 0.015, 0]);
+      break;
+    }
+    case 'leaf': {
+      const leafMesh = mesh(S(), M.plush('#E3A04B'), g, [0, 0.02, 0], [0.09, 0.012, 0.05], [0, 0.6, 0]);
+      leafMesh.castShadow = false;
+      mesh(cyl(0.004, 0.004, 0.11, 4), M.flat('#8A5A2B'), g, [0, 0.025, 0], [1, 1, 1], [Math.PI / 2, 0, 0.6]).castShadow = false;
+      break;
+    }
+    case 'feather': {
+      mesh(S(), M.plush('#F4F1EA'), g, [0, 0.02, 0], [0.11, 0.01, 0.035], [0, -0.4, 0]).castShadow = false;
+      mesh(cyl(0.004, 0.003, 0.2, 4), M.flat('#C9C2B5'), g, [0, 0.025, 0], [1, 1, 1], [Math.PI / 2, 0, -0.4]).castShadow = false;
+      break;
+    }
+    case 'butterfly': {
+      // Vuela a media altura; las alas se agitan desde PetScene (userData.wings)
+      const body = new THREE.Group();
+      body.position.y = 0.55;
+      g.add(body);
+      mesh(PetGeometry.capsule(), M.flat('#3B2F4A'), body, [0, 0, 0], [0.012, 0.03, 0.012], [Math.PI / 2, 0, 0]).castShadow = false;
+      const wings: THREE.Object3D[] = [];
+      for (const s of [-1, 1]) {
+        const w = new THREE.Group();
+        body.add(w);
+        mesh(S(), M.glossy(s < 0 ? '#FF9F6B' : '#FFB86B'), w, [0.05 * s, 0, 0], [0.05, 0.004, 0.04]).castShadow = false;
+        wings.push(w);
+      }
+      g.userData.wings = wings;
+      g.userData.flyer = body;
+      break;
+    }
     case 'cactus':
       mesh(cyl(0.14, 0.11, 0.16), M.plush('#E07A4F'), g, [0, 0.08, 0]);
       mesh(PetGeometry.capsule(), M.plush('#6DBE4B'), g, [0, 0.34, 0], [0.08, 0.1, 0.08]);

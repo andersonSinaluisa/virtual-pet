@@ -8,10 +8,16 @@
  *
  * La caja se abre cuando la mascota la ha INVESTIGADO de cerca lo suficiente
  * (contador físico `investigation` que incrementa el handler INVESTIGATE).
+ *
+ * v7 (mundo vivo): abrirla es FÍSICA del mundo (World.openBox), igual que en
+ * la habitación sin minijuego: el juego solo narra. La experiencia
+ * `mystery_opened`, el desbloqueo y el aprendizaje los registra GameSession
+ * al ver el evento OBJECT_OPENED (una sola fuente de verdad).
  */
 import type { StepResult } from '../simulation/Simulation';
 import type { WorldObject } from '../simulation/World';
-import { NOVEL_KINDS, type ItemKind } from '../world/Items';
+import { BOX_OPENS_AT } from '../simulation/ActionSystem';
+import { NOVEL_KINDS, isItemKind, type ItemKind } from '../world/Items';
 import { behaviorLine, capitalize, circuitActivity, type GameCommand, type GameContext, type GameSummary, type MiniGame, type Narration } from './MiniGame';
 
 export type MysteryPhase = 'appeared' | 'noticed' | 'approaching' | 'cautious' | 'investigating' | 'opened';
@@ -27,7 +33,7 @@ export interface MysteryView {
   boxId: number | null;
 }
 
-const OPEN_AT = 8;
+const OPEN_AT = BOX_OPENS_AT;
 const CAUTIOUS = new Set(['MOVE_AWAY', 'HIDE', 'GET_SCARED']);
 
 export class MysteryBoxGame implements MiniGame<MysteryView> {
@@ -43,6 +49,11 @@ export class MysteryBoxGame implements MiniGame<MysteryView> {
   start(ctx: GameContext): void {
     ctx.world.setPlayerPresent(true);
     const box = ctx.world.placeItem('mysteryBox', { x: 0.72, y: 0.55 }, 'game');
+    // Dentro: algo que aún no tenga en la mochila (si ya lo tiene todo, cualquiera)
+    const owned = new Set(ctx.ownedItems());
+    const pool = NOVEL_KINDS.filter((k) => !owned.has(k));
+    const list = pool.length ? pool : NOVEL_KINDS;
+    box.content = list[Math.floor(ctx.sim.config.rng() * list.length)];
     this.boxId = box.id;
   }
 
@@ -58,7 +69,12 @@ export class MysteryBoxGame implements MiniGame<MysteryView> {
 
   observe(r: StepResult, ctx: GameContext): void {
     this.lastActive = r.active;
-    if (this.phase === 'opened') return;
+    if (this.phase === 'opened') {
+      // El evento de apertura llega en el tick siguiente al que la caja cedió (los eventos se recogen al empezar cada tick)
+      const opened = r.events.find((e) => e.type === 'OBJECT_OPENED');
+      if (!this.revealed && opened && isItemKind(opened.detail)) this.revealed = opened.detail;
+      return;
+    }
     const w = ctx.world, pet = w.pet, box = this.box(ctx);
     if (!box) return;
     const d = w.distance(pet, box);
@@ -71,21 +87,12 @@ export class MysteryBoxGame implements MiniGame<MysteryView> {
     this.lastInvestigation = box.investigation;
     this.prevDist = d;
 
-    if (box.investigation >= OPEN_AT) this.open(ctx, box);
-  }
-
-  private open(ctx: GameContext, box: WorldObject): void {
-    const owned = new Set(ctx.ownedItems());
-    const pool = NOVEL_KINDS.filter((k) => !owned.has(k));
-    const list = pool.length ? pool : NOVEL_KINDS;
-    const kind = list[Math.floor(ctx.sim.config.rng() * list.length)];
-    const at = { x: box.x, y: box.y };
-    ctx.world.removeObject(box.id);
-    ctx.world.placeItem(kind, at); // se queda en la habitación
-    this.revealed = kind;
-    this.phase = 'opened';
-    ctx.unlock(kind);
-    ctx.record('mystery_opened', kind, 0.7, 0.8);
+    // La abrió el mundo (World.openBox) al investigarla lo suficiente: el juego solo lo cuenta
+    const opened = r.events.find((e) => e.type === 'OBJECT_OPENED');
+    if (box.state !== 'closed' || opened) {
+      this.phase = 'opened';
+      this.revealed = box.content ?? (opened && isItemKind(opened.detail) ? opened.detail : null);
+    }
   }
 
   view(ctx: GameContext): MysteryView {

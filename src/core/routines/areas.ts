@@ -5,6 +5,7 @@
  * puede CAMBIAR a "duerme en el rincón" si el jugador cambia la cama de sitio.
  */
 import type { Point } from '../simulation/Pet';
+import type { LocationId } from '../world/Locations';
 
 export const ROOM_AREAS = [
   { key: 'ventana', label: 'junto a la ventana', x: 0.5, y: 0.1 },
@@ -26,6 +27,15 @@ export function roomArea(p: Point): RoomArea {
   return best;
 }
 
+// v7: fuera de la habitación el "dónde" es el lugar (jardín, parque): suficiente para hábitos como
+// "suele salir al jardín por las mañanas" (interpretación, nunca una orden)
+const OUTDOOR_AREAS: Record<string, string> = { jardin: 'en el jardín', parque: 'en el parque', bosque: 'en el bosque', playa: 'en la playa' };
+const LOCATION_AREA: Partial<Record<LocationId, string>> = { garden: 'jardin', park: 'parque', forest: 'bosque', beach: 'playa' };
+
+export function areaOf(location: LocationId, p: Point): string {
+  return location === 'room' ? roomArea(p) : LOCATION_AREA[location] ?? location;
+}
+
 export function areaLabel(key: string): string {
-  return ROOM_AREAS.find((a) => a.key === key)?.label ?? key;
+  return ROOM_AREAS.find((a) => a.key === key)?.label ?? OUTDOOR_AREAS[key] ?? key;
 }

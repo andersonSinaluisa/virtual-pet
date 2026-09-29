@@ -60,7 +60,13 @@
     "report:routines": "jest src/core/__tests__/routineReport.test.ts",
     "test:routines": "jest src/core/__tests__/routines",
     "report:growth": "jest src/core/__tests__/growthReport.test.ts",
-    "test:growth": "jest src/core/__tests__/growth"
+    "test:growth": "jest src/core/__tests__/growth",
+    "report:world": "jest src/core/__tests__/livingWorldReport.test.ts",
+    "test:world": "jest src/core/__tests__/livingWorld",
+    "audio:fetch": "node scripts/audio/fetch-pet-audio.mjs",
+    "audio:process": "python3 scripts/audio/process_pet_audio.py",
+    "audio:validate": "node scripts/audio/validate-pet-audio.mjs",
+    "report:audio": "jest src/core/__tests__/petAudioReport.test.ts"
   },
   "private": true,
   "jest": {

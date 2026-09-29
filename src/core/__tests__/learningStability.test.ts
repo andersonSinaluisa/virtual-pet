@@ -10,7 +10,7 @@ import { describe, expect, it } from '@jest/globals';
 import { ACTION_LIST, type Action } from '../brain/Actions';
 import { denseWeights } from '../brain/BrainWeights';
 import { migrateSave } from '../persistence/migrations';
-import { DEFAULT_SETTINGS } from '../persistence/SaveGame';
+import { CURRENT_SAVE_VERSION, DEFAULT_SETTINGS } from '../persistence/SaveGame';
 import { seededRng } from '../random';
 import { GameSession } from '../session/GameSession';
 
@@ -26,11 +26,12 @@ describe('Estabilidad: 100k ticks aprendiendo', () => {
     const fixedBefore = s.sim.network.synapses.filter((x) => !plastic.has(x)).map((x) => x.weight);
     const onsets: Partial<Record<Action, number>> = {};
     let injected = 0;
-    const kinds = ['ball', 'teddy', 'rope', 'duck'] as const;
+    // v7: también los objetos del mundo vivo (la caja tiene su propio canal de atención)
+    const kinds = ['ball', 'teddy', 'rope', 'duck', 'mysteryBox', 'mirror'] as const;
 
     for (let t = 1; t <= 100_000; t++) {
       // Mundo cambiante: objetos, comida, llamadas, ruidos, luz
-      if (t % 400 === 0) { for (const o of s.world.objects.filter((x) => !x.fixed)) s.world.removeObject(o.id); s.world.placeItem(kinds[Math.floor(rng() * 4)]); }
+      if (t % 400 === 0) { for (const o of s.world.objects.filter((x) => !x.fixed)) s.world.removeObject(o.id); s.world.placeItem(kinds[Math.floor(rng() * kinds.length)]); }
       if (t % 300 === 0) { s.world.addFood(); s.world.addWater(); }
       const away = t % 10_000 < 4000 && t >= 10_000; // periodos sin jugador
       if (t % 250 === 0 && !away) s.world.callPet(1); // (llamar trae al jugador de vuelta)
@@ -92,7 +93,7 @@ describe('Migración de save v1 → v2', () => {
     (v1 as { memory: { experiences: Record<string, unknown>[] } }).memory = { ...v2.memory, experiences: v2.memory.experiences.map(({ reward: _r, actions: _a, ...e }) => e) };
 
     const migrated = migrateSave(v1);
-    expect(migrated.saveVersion).toBe(4); // v1 → v2 → v3 → v4 en cadena
+    expect(migrated.saveVersion).toBe(CURRENT_SAVE_VERSION); // v1 → v2 → … → actual, en cadena
     expect(migrated.brain.initialWeights).toEqual(migrated.brain.weights);
     expect(migrated.learning.experiencesApplied).toBe(0);
     expect(migrated.memory.experiences.every((e) => e.reward === 0 && Array.isArray(e.actions))).toBe(true);

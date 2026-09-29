@@ -1,0 +1,93 @@
+## A PERCEPCIÓN (bola, mascota en (0.5,0.5) mirando al frente)
+DÍA | delante · cerca | 0.62 m | ángulo 0° | FOV true | visión 0.91 | cerca 0.33 | seesBall→SNN 0.91
+DÍA | delante · lejos | 2.00 m | ángulo 0° | FOV true | visión 0.71 | cerca 0.00 | seesBall→SNN 0.71
+DÍA | detrás · cerca (bigotes/olfato) | 0.33 m | ángulo -180° | FOV false | visión 0.00 | cerca 0.43 | seesBall→SNN 0.43
+DÍA | detrás · lejos | 1.66 m | ángulo -180° | FOV false | visión 0.00 | cerca 0.00 | seesBall→SNN 0.00
+DÍA | al lado (periferia) | 1.82 m | ángulo -90° | FOV true | visión 0.47 | cerca 0.00 | seesBall→SNN 0.47
+NOCHE | delante · cerca | 0.62 m | ángulo 0° | FOV true | visión 0.41 | cerca 0.33 | seesBall→SNN 0.41
+NOCHE | delante · lejos | 2.00 m | ángulo 0° | FOV true | visión 0.32 | cerca 0.00 | seesBall→SNN 0.32
+NOCHE | detrás · cerca (bigotes/olfato) | 0.33 m | ángulo -180° | FOV false | visión 0.00 | cerca 0.43 | seesBall→SNN 0.43
+NOCHE | detrás · lejos | 1.66 m | ángulo -180° | FOV false | visión 0.00 | cerca 0.00 | seesBall→SNN 0.00
+NOCHE | al lado (periferia) | 1.82 m | ángulo -90° | FOV true | visión 0.21 | cerca 0.00 | seesBall→SNN 0.21
+OÍDO: pelota cae detrás → oída 0.26 · dirección -180° · detrás=true · atención=sonido:thud · la mira a los 19 ticks
+## B NOVEDAD/FAMILIARIDAD (caja, 12 exposiciones de 60 ticks separadas por 300)
+exp 0 novedad 1.00 familiaridad 0.00 etapa —
+exp 1 novedad 0.39 familiaridad 0.38 etapa INTERACTED
+exp 2 novedad 0.26 familiaridad 0.47 etapa INTERACTED
+exp 3 novedad 0.16 familiaridad 0.58 etapa INTERACTED
+exp 4 novedad 0.09 familiaridad 0.67 etapa INTERACTED
+exp 5 novedad 0.06 familiaridad 0.74 etapa INTERACTED
+exp 6 novedad 0.05 familiaridad 0.77 etapa INTERACTED
+exp 7 novedad 0.02 familiaridad 0.83 etapa INTERACTED
+exp 8 novedad 0.01 familiaridad 0.84 etapa INTERACTED
+exp 9 novedad 0.01 familiaridad 0.86 etapa INTERACTED
+exp 10 novedad 0.01 familiaridad 0.87 etapa INTERACTED
+exp 11 novedad 0.01 familiaridad 0.87 etapa INTERACTED
+exp 12 novedad 0.00 familiaridad 0.89 etapa INTERACTED
+21 días sin verla: novedad 0.07 · familiaridad 0.89
+## C DOS MASCOTAS, MISMO GENOMA, HISTORIAS DISTINTAS (15 ensayos con la caja)
+seed 11 historia A: abrió 1/15, sustos 0 · B: sustos 209
+  Δ seesBox→fear A 0.000 B 0.251 · Δ seesBox→curiosity A 0.013 B 0.003 · Δ newObject→fear B 0.068
+  sin historia: se acerca 0.58 · dist mín 0.13 · ticks cerca 36.5 · investiga 2.0 · miedo 0.00 · abre 0.00 · 1ª acción {"LOOK_AT_OBJECT":3,"EXPLORE":8,"PLAY":1}
+  A (sin sustos): se acerca 0.50 · dist mín 0.15 · ticks cerca 23.3 · investiga 0.3 · miedo 0.00 · abre 0.00 · 1ª acción {"EXPLORE":12}
+  B (aversiva): se acerca 0.17 · dist mín 0.21 · ticks cerca 9.9 · investiga 0.8 · miedo 0.00 · abre 0.00 · 1ª acción {"REST":3,"EXPLORE":9}
+  ESCENA 📦⚽🧸 A: 1º {"mysteryBox":2,"ball":1,"teddy":3,"none":2} implicación {"mysteryBox":"0.69","ball":"0.06","teddy":"0.26"} miedo 0.00
+                B: 1º {"mysteryBox":2,"ball":4,"teddy":1,"none":1} implicación {"mysteryBox":"0.69","ball":"0.23","teddy":"0.08"} miedo 0.38
+seed 12 historia A: abrió 2/15, sustos 0 · B: sustos 257
+  Δ seesBox→fear A 0.000 B 0.262 · Δ seesBox→curiosity A 0.015 B 0.001 · Δ newObject→fear B 0.007
+  sin historia: se acerca 0.58 · dist mín 0.13 · ticks cerca 36.5 · investiga 2.0 · miedo 0.00 · abre 0.00 · 1ª acción {"LOOK_AT_OBJECT":3,"EXPLORE":8,"PLAY":1}
+  A (sin sustos): se acerca 0.50 · dist mín 0.16 · ticks cerca 24.8 · investiga 1.2 · miedo 0.00 · abre 0.00 · 1ª acción {"DRINK":1,"EXPLORE":10,"APPROACH":1}
+  B (aversiva): se acerca 0.33 · dist mín 0.19 · ticks cerca 26.0 · investiga 2.0 · miedo 0.00 · abre 0.00 · 1ª acción {"SLEEP":1,"LOOK_AT_OBJECT":2,"REST":1,"APPROACH":1,"EXPLORE":7}
+  ESCENA 📦⚽🧸 A: 1º {"mysteryBox":2,"ball":3,"teddy":3,"none":0} implicación {"mysteryBox":"0.73","ball":"0.14","teddy":"0.13"} miedo 0.00
+                B: 1º {"mysteryBox":0,"ball":4,"teddy":4,"none":0} implicación {"mysteryBox":"0.59","ball":"0.17","teddy":"0.25"} miedo 0.25
+seed 13 historia A: abrió 1/15, sustos 0 · B: sustos 175
+  Δ seesBox→fear A 0.000 B 0.339 · Δ seesBox→curiosity A 0.008 B 0.001 · Δ newObject→fear B 0.073
+  sin historia: se acerca 0.58 · dist mín 0.13 · ticks cerca 36.5 · investiga 2.0 · miedo 0.00 · abre 0.00 · 1ª acción {"LOOK_AT_OBJECT":3,"EXPLORE":8,"PLAY":1}
+  A (sin sustos): se acerca 0.75 · dist mín 0.09 · ticks cerca 55.9 · investiga 4.7 · miedo 0.00 · abre 0.08 · 1ª acción {"DRINK":1,"LOOK_AT_OBJECT":1,"EXPLORE":8,"APPROACH":1,"PICK_UP_OBJECT":1}
+  B (aversiva): se acerca 0.25 · dist mín 0.20 · ticks cerca 13.1 · investiga 0.4 · miedo 0.00 · abre 0.00 · 1ª acción {"DRINK":1,"EXPLORE":10,"LOOK_AT_OBJECT":1}
+  ESCENA 📦⚽🧸 A: 1º {"mysteryBox":1,"ball":1,"teddy":4,"none":2} implicación {"mysteryBox":"0.59","ball":"0.11","teddy":"0.30"} miedo 0.00
+                B: 1º {"mysteryBox":0,"ball":2,"teddy":2,"none":4} implicación {"mysteryBox":"0.76","ball":"0.02","teddy":"0.22"} miedo 0.50
+## MILO vs LUNA (misma escena 📦 ⚽ 🧸)
+Milo (equilibrado): 1º {"mysteryBox":0,"ball":0,"teddy":9,"none":1} · implicación {"mysteryBox":"0.53","ball":"0.01","teddy":"0.45"} · miedo 0.00
+  percibió: señal 0.76 a 1.66 m, 0°, novedad 0.01, familiaridad 0.71
+  entradas SNN: curiosity=0.35 interestingObjectVisible=0.77 newObjectDetected=0.78 seesBox=0.76 familiarObject=0.54 unfamiliarPlace=0.02
+  decisión: PICK_UP_OBJECT ← circuitos curiosityCircuit, playCircuit, restCircuit ← sensores newObjectDetected(0.75), curiosity(0.64), boredom(0.52) · vía newObjectDetected→curiosityCircuit 0.70→0.71; curiosity→curiosityCircuit 0.60→0.60; boredom→curiosityCircuit 0.20→0.20; curiosityCircuit→PICK_UP_OBJECT 0.40→0.40; playCircuit→PICK_UP_OBJECT 0.60→0.60; restCircuit→PICK_UP_OBJECT 0.00→0.00
+  acciones: EXPLORE LOOK_AT_OBJECT INVESTIGATE PICK_UP_OBJECT WALK LOOK_AT_OBJECT PLAY PICK_UP_OBJECT RUN WALK PLAY LOOK_AT_OBJECT PICK_UP_OBJECT INVESTIGATE
+  experiencias: investigated(mysteryBox) v=0.40 r=0.05 | approached_object(ball) v=0.30 r=0.05 | played v=0.51 r=0.51 | investigated(mysteryBox) v=0.40 r=0.05 | played v=0.09 r=0.09 | investigated(mysteryBox) v=0.40 r=0.05 | approached(player) v=0.40 r=0.10 | mystery_opened(rope) v=0.70 r=0.60 | approached_object(rope) v=0.30 r=0.05 | picked_up(rope) v=0.50 r=0.20 | investigated(mysteryBox) v=0.40 r=0.05 | approached(player) v=0.40 r=0.10 | investigated(mysteryBox) v=0.40 r=0.05 | played(rope) v=0.00 r=0.00 | approached(player) v=0.40 r=0.10 | rested v=0.00 r=0.00 | played(rope) v=0.00 r=0.00 | investigated(mysteryBox) v=0.40 r=0.05 | approached(player) v=0.40 r=0.10 | ate v=0.00 r=0.00 | rested v=0.00 r=0.00 | investigated(mysteryBox) v=0.40 r=0.05
+  aprendió: investigated r=0.05 [seesBall→curiosityCircuit +0.0003, seesTeddy→curiosityCircuit +0.0003, seesBox→curiosityCircuit +0.0003] | approached_object r=0.05 [newObjectDetected→curiosityCircuit +0.0003, seesTeddy→curiosityCircuit +0.0003, seesBox→curiosityCircuit +0.0003] | played r=0.38 [lightLevel→curiosityCircuit +0.0053, time12→curiosityCircuit +0.0053, seesTeddy→curiosityCircuit +0.0028] | investigated r=0.05 [boxAttention→LOOK_AT_OBJECT +0.0004, boxAttention→PLAY +0.0003, boxAttention→PICK_UP_OBJECT +0.0003] | played r=-0.06 [time12→curiosityCircuit -0.0008, lightLevel→curiosityCircuit -0.0008, time12→activityCircuit -0.0004] | investigated r=0.05 [seesTeddy→curiosityCircuit +0.0005, newObjectDetected→curiosityCircuit +0.0003, boxAttention→LOOK_AT_OBJECT +0.0003]
+Luna (miedoso): 1º {"mysteryBox":0,"ball":9,"teddy":0,"none":1} · implicación {"mysteryBox":"0.60","ball":"0.35","teddy":"0.05"} · miedo 0.90
+  percibió: señal 0.76 a 1.66 m, 0°, novedad 0.04, familiaridad 0.51
+  entradas SNN: curiosity=0.35 interestingObjectVisible=0.77 newObjectDetected=0.78 seesBox=0.76 familiarObject=0.39 unfamiliarPlace=0.02
+  decisión: GET_SCARED ← circuitos fearCircuit ← sensores newObjectDetected(0.75), seesBox(0.76), hidingPlaceAvailable(0.62) · vía newObjectDetected→fearCircuit 0.60→0.84; seesBox→fearCircuit 0.00→0.15; hidingPlaceAvailable→fearCircuit 0.05→0.05; fearCircuit→GET_SCARED 1.10→1.10
+  acciones: CRY GET_SCARED LOOK_AT_OBJECT EXPLORE RUN INVESTIGATE PICK_UP_OBJECT MOVE_AWAY GET_SCARED HIDE LOOK_AT_OBJECT RUN EXPLORE WALK
+  experiencias: rested v=0.86 r=0.86 | cried v=-0.60 r=0.00 | scared(mysteryBox) v=-0.70 r=0.00 | investigated(mysteryBox) v=0.40 r=0.05 | scared(mysteryBox) v=-0.70 r=0.00 | hid(mysteryBox) v=-0.40 r=0.00 | investigated(mysteryBox) v=0.40 r=0.05 | scared(mysteryBox) v=-0.70 r=0.00 | scared(mysteryBox) v=-0.70 r=0.00 | investigated(mysteryBox) v=0.40 r=0.05 | scared(mysteryBox) v=-0.70 r=0.00 | scared(mysteryBox) v=-0.70 r=0.00 | scared(mysteryBox) v=-0.70 r=0.00 | investigated(ball) v=0.40 r=0.05 | scared(mysteryBox) v=-0.70 r=0.00 | rested v=0.00 r=0.00 | scared(mysteryBox) v=-0.70 r=0.00 | investigated(mysteryBox) v=0.40 r=0.05 | approached_object(ball) v=0.30 r=0.05 | scared(mysteryBox) v=-0.70 r=0.00 | investigated(mysteryBox) v=0.40 r=0.05 | rested v=0.00 r=0.00 | scared(mysteryBox) v=-0.70 r=0.00 | investigated(mysteryBox) v=0.40 r=0.05 | scared(mysteryBox) v=-0.70 r=0.00 | scared(mysteryBox) v=-0.70 r=0.00 | scared(mysteryBox) v=-0.70 r=0.00 | rested v=0.00 r=0.00 | scared(mysteryBox) v=-0.70 r=0.00 | investigated(mysteryBox) v=0.40 r=0.05 | rested v=0.00 r=0.00 | scared(mysteryBox) v=-0.70 r=0.00
+  aprendió: rested r=0.82 [lightLevel→restCircuit +0.0061, time12→restCircuit +0.0061, fatigue→restCircuit +0.0061] | amenaza:scared r=0.64 [newObjectDetected→fearCircuit +0.0080] | investigated r=0.05 [seesBall→curiosityCircuit +0.0003, seesBall→playCircuit +0.0003, seesTeddy→curiosityCircuit +0.0003] | amenaza:investigated r=-0.25 [newObjectDetected→fearCircuit -0.0020] | amenaza:scared r=0.64 [newObjectDetected→fearCircuit +0.0080] | amenaza:hid r=0.30 [newObjectDetected→fearCircuit +0.0036]
+## D CONTEXTO (misma mascota, misma caja)
+día + habitación: se acerca 0.60 · dist mín 0.15 · miedo 0.00 · investiga 7.1 · 1ª {"LOOK_AT_OBJECT":2,"EXPLORE":6,"REST":1,"PLAY":1}
+noche + parque desconocido: se acerca 0.00 · dist mín 0.41 · miedo 1.00 · investiga 0.0 · 1ª {"EXPLORE":6,"REST":1,"LOOK_AT_OBJECT":2,"GET_SCARED":1}
+## E MOVIMIENTO (16 ensayos)
+quieta: objectMoving 0.00 · la mira (12 ticks) 7/16 · se implica (25 ticks) 16/16 · ticks de foco 500
+rodando: objectMoving 0.33 · la mira (12 ticks) 13/16 · se implica (25 ticks) 16/16 · ticks de foco 516
+## PRIMERA VISITA
+jardín seed 5: "🌿 Primera mañana en el jardín" — Exploró hasta la otra punta, olfateándolo todo. Algo le dio miedo y buscó refugio. Hasta se animó a jugar. Vio por primera vez la mariposa. · distancia máx 0.65 · nuevo: butterfly · {"LOOK_AT_OBJECT":21,"EXPLORE":10,"INVESTIGATE":15,"PICK_UP_OBJECT":3,"WALK":4,"RUN":1,"GET_SCARED":7,"CRY":5,"ASK_ATTENTION":4,"REST":2,"DRINK":1,"EAT":1}
+jardín seed 6: "🌿 Primera mañana en el jardín" — Exploró hasta la otra punta, olfateándolo todo. Algo le dio miedo y buscó refugio. Hasta se animó a jugar. Vio por primera vez la mariposa. · distancia máx 1.00 · nuevo: butterfly · {"LOOK_AT_OBJECT":20,"EXPLORE":5,"INVESTIGATE":12,"PICK_UP_OBJECT":5,"WALK":3,"GET_SCARED":4,"RUN":2,"ASK_ATTENTION":5,"CRY":4,"DRINK":3,"EAT":2,"REST":2}
+jardín seed 7: "🌿 Primera mañana en el jardín" — Exploró hasta la otra punta, olfateándolo todo. Algo le dio miedo y buscó refugio. Hasta se animó a jugar. Vio por primera vez la mariposa. · distancia máx 0.87 · nuevo: butterfly · {"LOOK_AT_OBJECT":22,"EXPLORE":8,"INVESTIGATE":13,"PICK_UP_OBJECT":7,"WALK":3,"RUN":2,"GET_SCARED":8,"ASK_ATTENTION":5,"CRY":4,"REST":2,"DRINK":1,"EAT":1}
+parque: "🌳 Primera mañana en el parque" — Exploró hasta la otra punta, olfateándolo todo. Se sobresaltó una vez, pero siguió. Hasta se animó a jugar. Vio por primera vez la hoja. · distancia máx 1.17
+puerta abierta 6000 ticks equilibrado seed 8: salió 0 · volvió 0 · 0.0 % en el jardín
+puerta abierta 6000 ticks equilibrado seed 9: salió 0 · volvió 0 · 0.0 % en el jardín
+puerta abierta 6000 ticks equilibrado seed 10: salió 0 · volvió 0 · 0.0 % en el jardín
+puerta abierta 6000 ticks curioso seed 8: salió 1 · volvió 1 · 2.2 % en el jardín · "🌿 Primera mañana en el jardín": Exploró los alrededores, olfateándolo todo. Hasta se animó a jugar.
+puerta abierta 6000 ticks curioso seed 9: salió 1 · volvió 1 · 16.9 % en el jardín · "🌿 Primera mañana en el jardín": Exploró los alrededores, olfateándolo todo. Hasta se animó a jugar. Vio por primera vez la mariposa.
+puerta abierta 6000 ticks curioso seed 10: salió 1 · volvió 1 · 2.8 % en el jardín · "🌿 Primera mañana en el jardín": Exploró los alrededores, olfateándolo todo. Hasta se animó a jugar.
+puerta abierta 6000 ticks miedoso seed 8: salió 0 · volvió 0 · 0.0 % en el jardín
+puerta abierta 6000 ticks miedoso seed 9: salió 0 · volvió 0 · 0.0 % en el jardín
+puerta abierta 6000 ticks miedoso seed 10: salió 0 · volvió 0 · 0.0 % en el jardín
+## F OFFLINE (8 h)
+curioso · puerta cerrada: lugares room · termina en room · Fue a comer a su plato. Bebió agua. Jugó con la pelota y la concha. Exploró la habitación y olfateó cosas. Te echó de menos: miró varias veces hacia la puerta. Ahora tiene hambre. Necesita un poco de cariño.
+curioso · puerta abierta: lugares room · termina en room · Bebió agua. Jugó un rato con sus juguetes. Exploró la habitación y olfateó cosas. Te echó de menos: miró varias veces hacia la puerta. Ahora tiene hambre. Necesita un poco de cariño.
+equilibrado · puerta abierta: lugares room · termina en room · Durmió una siesta en su camita. Bebió agua. Jugó con la concha y la pelota. Exploró la habitación y olfateó cosas. Te echó de menos: miró varias veces hacia la puerta. Ahora tiene hambre. Necesita un poco de cariño.
+## G RENDIMIENTO (tick completo, Node)
+14 objetos: tick 0.322 ms (p95 1.000) · percepción 0.162 ms
+29 objetos: tick 0.528 ms (p95 1.000) · percepción 0.257 ms
+54 objetos: tick 0.888 ms (p95 2.000) · percepción 0.607 ms
+ubicaciones: room, garden, park, forest(preparada), beach(preparada)

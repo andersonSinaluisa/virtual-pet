@@ -85,6 +85,10 @@ const SENSOR_PHRASE: Record<SensorKey, string> = {
   time16: 'Era por la tarde', time20: 'Era de noche', lightLevel: 'Había luz', zoneBed: 'Estaba cerca de su cama',
   zoneFood: 'Estaba cerca de su comida', zonePlay: 'Estaba en su zona de juego', zoneWindow: 'Estaba junto a la ventana',
   playerReturned: 'Acababas de volver', recentActivity: 'Había estado muy activo',
+  // v6: mundo vivo
+  seesBox: 'Vio la caja', objectMoving: 'Vio algo moverse', soundHeard: 'Oyó algo', soundNovelty: 'Oyó un sonido que no conocía',
+  familiarObject: 'Reconoció algo conocido', unfamiliarPlace: 'Estaba en un sitio poco conocido', openSpace: 'Tenía mucho espacio alrededor',
+  ambientActivity: 'Había movimiento alrededor',
 };
 
 const CIRCUIT_EMOTION: Record<CircuitKey, string> = {
@@ -92,6 +96,7 @@ const CIRCUIT_EMOTION: Record<CircuitKey, string> = {
   playCircuit: 'Ganas de jugar', socialCircuit: 'Ganas de compañía', lonelinessCircuit: 'Soledad', followCircuit: 'Ganas de seguirte',
   joyCircuit: 'Alegría', distressCircuit: 'Malestar', curiosityCircuit: 'Curiosidad', fearCircuit: 'Miedo',
   ballAttention: 'Interés por la pelota', teddyAttention: 'Interés por el peluche', ropeAttention: 'Interés por la cuerda', duckAttention: 'Interés por el patito',
+  boxAttention: 'Interés por la caja',
 };
 
 export function sensorPhrase(key: string): string {

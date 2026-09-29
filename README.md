@@ -15,6 +15,8 @@ npm run test:routines   # rutinas: reloj, detector, experimentos de 30 días
 npm run report:routines # sueño A/B, regreso, deriva, interrupción (cifras del informe)
 npm run test:growth     # crecimiento: cerebro/memoria/hábitos se conservan, offline, Milo vs Luna
 npm run report:growth   # etapas de vida (cifras del informe)
+npm run test:world      # mundo vivo: percepción, novedad, caja misteriosa, lugares, offline
+npm run report:world    # mundo vivo (cifras del informe → docs/living-world-report.txt)
 npm run typecheck
 npx expo lint
 ```
@@ -39,4 +41,6 @@ Documentación: `docs/mobile-migration-plan.md` (arquitectura y decisiones) y `d
 
 **Crecimiento**: Bebé → Cachorro/Gatito → Joven → Adulto. La misma mascota con el mismo cerebro: crecer exige edad Y experiencias vividas (sin XP), modula plasticidad, cuerpo y capacidades, y nunca reinicia pesos ni borra recuerdos. Diseño en `docs/pet-growth.md`; resultados en `docs/growth-results.md`.
 
-Herramientas de investigación (solo desarrollo): Ajustes → *Herramientas de desarrollo* (velocidad, pausa, paso, forzar sensor, crear objetos, estado, exportar/importar save) y Brain View → *Red Neuronal SNN*.
+**Mundo vivo**: 🏠 habitación, 🌿 jardín y 🌳 parque (bosque y playa preparados). Cada lugar y objeto produce estímulos; la mascota percibe con campo de visión, oído y memoria de exposición (novedad ≠ familiaridad), sin omnisciencia; la atención y la navegación resuelven sobre qué actuar y cómo llegar; el miedo también se aprende (y se extingue). La caja misteriosa demuestra la cadena completa: mundo → percepción → SNN → conducta → experiencia → memoria → plasticidad → conducta futura distinta. Diseño en `docs/living-world.md`; resultados en `docs/living-world-results.md`.
+
+Herramientas de investigación (solo desarrollo): Ajustes → *Herramientas de desarrollo* (velocidad, pausa, paso, forzar sensor, crear objetos, estado, exportar/importar save, **World Inspector**: FOV, oído, atención, navegación, sensor debug, rendimiento) y Brain View → *Red Neuronal SNN*.
