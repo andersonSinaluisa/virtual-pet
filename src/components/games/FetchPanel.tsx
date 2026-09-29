@@ -27,19 +27,24 @@ export function FetchPanel({ view, petName, species }: { view: FetchView; petNam
   };
   return (
     <View style={styles.root}>
+      {/* El mundo ocupa toda la pantalla; lo de abajo (botones y panel) va ENCIMA, sin taparse entre sí */}
       <PetStage species={species} mode="fetch" style={StyleSheet.absoluteFill}>
         <View pointerEvents="box-none" style={styles.overlay}>
           <ThoughtBubble text={view.narration.title} tail="center" />
           {__DEV__ ? <Chip small label={`SNN ${Math.round(view.spikesPerSecond)} Hz`} bg={alpha(colors.secondaryContainer, 0.8)} color={colors.onSecondaryContainer} style={styles.dev} /> : null}
-          <View style={{ flex: 1 }} pointerEvents="none" />
-          <RewardButton style={{ alignSelf: 'center' }} />
-          {view.canThrow ? (
-            <Squishable onPress={quickThrow} accessibilityLabel="Lanzar la pelota" style={styles.throw}>
-              <Text variant="labelLg" color="#fff">⚽ ¡Lanzar!</Text>
-            </Squishable>
-          ) : null}
         </View>
       </PetStage>
+
+      {/* Hueco transparente: los gestos (arrastrar la pelota) llegan a la escena de detrás */}
+      <View style={styles.flex} pointerEvents="box-none" />
+      <View pointerEvents="box-none" style={styles.actions}>
+        <RewardButton style={{ alignSelf: 'center' }} />
+        {view.canThrow ? (
+          <Squishable onPress={quickThrow} accessibilityLabel="Lanzar la pelota" style={styles.throw}>
+            <Text variant="labelLg" color="#fff">⚽ ¡Lanzar!</Text>
+          </Squishable>
+        ) : null}
+      </View>
 
       <View style={[styles.panel, { paddingBottom: insets.bottom + spacing.sm }]}>
         <Text variant="labelLg" align="center" color={colors.textMuted}>
@@ -56,10 +61,12 @@ export function FetchPanel({ view, petName, species }: { view: FetchView; petNam
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  overlay: { flex: 1, padding: spacing.md, gap: spacing.sm },
+  overlay: { padding: spacing.md, gap: spacing.sm },
+  actions: { alignItems: 'center', gap: spacing.sm, paddingBottom: spacing.md },
   dev: { alignSelf: 'flex-end' },
   throw: {
     alignSelf: 'center', paddingHorizontal: 24, paddingVertical: 14, borderRadius: radius.full,
+    backgroundColor: colors.error, // si el degradado no se dibuja, el botón sigue viéndose
     experimental_backgroundImage: `linear-gradient(135deg, #ef4444 0%, ${colors.error} 100%)`, boxShadow: '0 8px 18px rgba(186,26,26,0.35)',
   },
   panel: { paddingHorizontal: spacing.margin, paddingTop: spacing.md, gap: spacing.md, backgroundColor: alpha(colors.surface, 0.97) },
