@@ -112,10 +112,12 @@ const DUSK_SKY = new THREE.Color('#FFB27A');
 const dusk = (daylight: number) => Math.max(0, 1 - Math.abs(daylight - 0.5) * 2);
 /** Campo de visión vertical de la franja visible (el del prototipo). */
 const BASE_FOV = 30;
+// Distancia de la vista frontal original (|(0, 3.12, 5.85)|), referencia para la isométrica
+const ISO_BASE_RADIUS = Math.hypot(3.12, 5.85);
 
 export class PetScene {
   readonly scene = new THREE.Scene();
-  readonly camera = new THREE.PerspectiveCamera(BASE_FOV, 1, 0.1, 60);
+  readonly camera = new THREE.PerspectiveCamera(BASE_FOV, 1, 0.1, 140);
   private pet!: Pet3D;
   private species!: SpeciesKey;
   private readonly controller = new PetController(null);
@@ -161,6 +163,7 @@ export class PetScene {
   private viewTop = 0;
   private viewBottom = 0;
   private zoom = 1;
+  private baseFov = BASE_FOV;
   private orbit = 0;
   private readonly debug: boolean;
   private readonly framing: 'room' | 'close';
@@ -341,14 +344,15 @@ export class PetScene {
     this.aspect = this.width / (this.height * band);
     this.camera.aspect = this.width / this.height;
     // Campo de visión ampliado para que la franja muestre exactamente BASE_FOV
-    this.camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(BASE_FOV) / 2) / band));
+    this.camera.fov = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(THREE.MathUtils.degToRad(this.baseFov) / 2) / band));
     const shift = ((this.viewBottom - this.viewTop) / 2) * this.height;
     if (Math.abs(shift) > 0.5) this.camera.setViewOffset(this.width, this.height, 0, shift, this.width, this.height);
     else this.camera.clearViewOffset();
     this.camera.updateProjectionMatrix();
   }
 
-  setZoom(z: number): void { this.zoom = Math.max(0.65, Math.min(1.35, z)); }
+  // v9.1: el zoom se aleja más (vista de escenario completo)
+  setZoom(z: number): void { this.zoom = Math.max(0.6, Math.min(1.8, z)); }
   getZoom(): number { return this.zoom; }
   setOrbit(yaw: number): void { this.orbit = Math.max(-0.7, Math.min(0.7, yaw)); }
   getOrbit(): number { return this.orbit; }
@@ -523,10 +527,12 @@ export class PetScene {
     // Paredes laterales de la casa: si la cámara (órbita) queda detrás, se ocultan para no tapar la escena
     for (const w of rt.sideWalls) {
       const behind = Math.sign(cam.x) === Math.sign(w.x) && Math.abs(cam.x) > Math.abs(w.x) - 0.1;
-      const target = behind ? 0.12 : 1;
+      // Escenario isométrico: la pared del lado de la cámara desaparece del todo (como en un diorama)
+      const target = behind ? 0 : 1;
       w.mat.opacity += (target - w.mat.opacity) * k;
       w.mat.transparent = w.mat.opacity < 0.99;
       w.mat.depthWrite = w.mat.opacity > 0.9;
+      w.mesh.visible = w.mat.opacity > 0.02;
     }
     rt.debug.visible = !!this.debugFlags.semantic;
     // Precarga del lugar contiguo cuando la mascota se acerca a una salida (sin pantalla de carga)
@@ -544,6 +550,7 @@ export class PetScene {
     // v9: perfil de cámara por lugar (HomeCameraProfile, GardenCameraProfile, ParkCameraProfile)
     const prof = this.cameraProfile;
     const dist = (close ? 0.62 : 1) * Math.min(1.6, portrait) * this.zoom * (prof?.distance ?? 1);
+    if (Math.abs(this.baseFov - (close ? BASE_FOV : prof?.fov ?? BASE_FOV)) > 0.01) { this.baseFov = close ? BASE_FOV : prof?.fov ?? BASE_FOV; this.applyView(); }
     const followK = close ? 0.85 : prof ? Math.min(0.95, prof.follow + 0.25 * (portrait - 1)) : 0.12 + 0.25 * (portrait - 1);
     const shakeTarget = active.includes('GET_SCARED') ? 1 : (this.source.world.pet.speed || 0) > 1.4 ? 0.35 : 0;
     this.camShake += (shakeTarget - this.camShake) * (1 - Math.exp(-dt * 4));
@@ -551,12 +558,22 @@ export class PetScene {
     // Modo cámara: sigue a la mascota (por defecto) o enfoca un objeto (herramientas / Recuerdos)
     const focusObj = this.cameraFocus?.type === 'object' ? this.entities.get(this.cameraFocus.id)?.group.position : null;
     const target = focusObj ?? petPos;
-    const look = this.v2.set(target.x * followK, close ? 0.55 : prof?.lookHeight ?? 0.38, 0.45 + (target.z - 0.45) * followK * 0.6);
-    // Desplazamiento base de la cámara (el mismo del prototipo) escalado y orbitado
-    const off = this.v3.set(0, 3.5 - 0.38, 6.3 - 0.45).multiplyScalar(dist);
-    if (close) off.y *= 0.55;
-    else off.y *= prof?.height ?? 1;
-    off.applyAxisAngle(THREE.Object3D.DEFAULT_UP, this.orbit);
+    let off: THREE.Vector3;
+    let look: THREE.Vector3;
+    if (close || !prof) {
+      // Primer plano (onboarding): la vista frontal de siempre
+      look = this.v2.set(target.x * followK, close ? 0.55 : 0.38, 0.45 + (target.z - 0.45) * followK * 0.6);
+      off = this.v3.set(0, 3.5 - 0.38, 6.3 - 0.45).multiplyScalar(dist);
+      if (close) off.y *= 0.55;
+      off.applyAxisAngle(THREE.Object3D.DEFAULT_UP, this.orbit);
+    } else {
+      // v9.1: vista de escenario casi isométrica. Campo de visión estrecho (poca perspectiva) y
+      // más lejos para ver lo mismo: tan(15°)/tan(fov/2) veces la distancia de la vista frontal
+      look = this.v2.set(target.x * followK, prof.lookHeight, target.z * followK);
+      const R = ISO_BASE_RADIUS * (Math.tan(THREE.MathUtils.degToRad(BASE_FOV / 2)) / Math.tan(THREE.MathUtils.degToRad(prof.fov / 2))) * dist;
+      const yaw = THREE.MathUtils.degToRad(prof.yaw) + this.orbit, pitch = THREE.MathUtils.degToRad(prof.pitch);
+      off = this.v3.set(Math.sin(yaw) * Math.cos(pitch) * R, Math.sin(pitch) * R * (prof.height ?? 1), Math.cos(yaw) * Math.cos(pitch) * R);
+    }
     this.camera.position.set(
       look.x + off.x + Math.sin(this.t * 31) * 0.012 * this.camShake,
       look.y + off.y + Math.sin(this.t * 27) * 0.01 * this.camShake,

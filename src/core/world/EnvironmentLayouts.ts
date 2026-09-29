@@ -54,6 +54,9 @@ export interface PropPlacement {
 }
 
 export interface CameraProfile {
+  // v9.1: cámara casi isométrica tipo "diorama" (giro en diagonal + inclinación, campo de visión estrecho)
+  yaw: number; // grados alrededor de Y (0 = de frente; + = desde la derecha)
+  pitch: number; // grados de inclinación sobre el suelo (isometría clásica ≈ 35°)
   fov: number;
   distance: number; // multiplicador del desplazamiento base
   height: number; // multiplicador de la altura
@@ -78,7 +81,7 @@ export interface EnvironmentLayout {
 // Pared del fondo en y≈0, izquierda x≈0, derecha x≈1; el frente queda abierto hacia la cámara.
 const HOME: EnvironmentLayout = {
   location: 'room', shell: 'room', lighting: 'HOME',
-  camera: { fov: 30, distance: 1, height: 1, follow: 0.3, lookHeight: 0.4 },
+  camera: { yaw: 40, pitch: 38, fov: 20, distance: 1, height: 1, follow: 0.3, lookHeight: 0.4 },
   petSpawns: [{ x: 0.45, y: 0.55 }],
   props: [
     { id: 'window', asset: 'home/window_large', at: { x: 0.5, y: -0.03 }, scale: 1.6, elev: 0.85, class: 'SEMANTIC', semantic: 'WINDOW', binding: { zone: 'WINDOW_ZONE' }, label: 'la ventana' },
@@ -104,7 +107,7 @@ const HOME: EnvironmentLayout = {
 const tuft = (id: string, x: number, y: number, big = false): PropPlacement => ({ id, asset: big ? 'outdoor/grass_large' : 'outdoor/grass', at: { x, y }, rot: (x * 997) % 360, class: 'DECORATIVE', semantic: 'GRASS', sway: 0.06, detail: 2 });
 const GARDEN: EnvironmentLayout = {
   location: 'garden', shell: 'garden', lighting: 'GARDEN',
-  camera: { fov: 32, distance: 1.25, height: 1.1, follow: 0.85, lookHeight: 0.45 },
+  camera: { yaw: 35, pitch: 40, fov: 20, distance: 1.25, height: 1, follow: 0.85, lookHeight: 0.45 },
   petSpawns: [{ x: 0.18, y: 0.2 }],
   props: [
     { id: 'houseDoor', asset: 'home/door', at: { x: 0.1, y: -0.035 }, class: 'SEMANTIC', semantic: 'DOOR', binding: { exitId: 'garden>room' }, label: 'la puerta de casa' },
@@ -136,7 +139,7 @@ const GARDEN: EnvironmentLayout = {
 const bgTree = (id: string, x: number, asset: string, s = 2.4): PropPlacement => ({ id, asset: `outdoor/${asset}`, at: { x, y: -0.06 }, scale: s, class: 'DECORATIVE', semantic: 'TREE', detail: 1 });
 const PARK: EnvironmentLayout = {
   location: 'park', shell: 'park', lighting: 'PARK',
-  camera: { fov: 34, distance: 1.55, height: 1.2, follow: 0.9, lookHeight: 0.5 },
+  camera: { yaw: 35, pitch: 42, fov: 20, distance: 1.5, height: 1, follow: 0.9, lookHeight: 0.5 },
   petSpawns: [{ x: 0.08, y: 0.5 }, { x: 0.5, y: 0.9 }, { x: 0.92, y: 0.6 }, { x: 0.45, y: 0.3 }],
   props: [
     { id: 'tree1', asset: 'outdoor/tree_default', at: { x: 0.15, y: 0.18 }, scale: 2.2, class: 'INTERACTIVE', semantic: 'TREE', footprint: { kind: 'circle', r: 0.45 }, label: 'un árbol', occluder: true, sway: 0.01 },
